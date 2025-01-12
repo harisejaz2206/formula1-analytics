@@ -22,6 +22,7 @@ const RaceTracker: React.FC = () => {
   const [qualifyingTimes, setQualifyingTimes] = useState<any[]>([]);
   const [pitStops, setPitStops] = useState<any[]>([]);
   const [positionChanges, setPositionChanges] = useState<any[]>([]);
+  const [qualifyingComparison, setQualifyingComparison] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSeasons = async () => {
@@ -163,6 +164,30 @@ const RaceTracker: React.FC = () => {
     });
 
     setPositionChanges(changes);
+  }, [raceData]);
+
+  useEffect(() => {
+    if (!raceData) return;
+
+    // Transform qualifying data
+    const comparison = raceData.Results.map((result: any) => {
+      const gridPosition = result.grid === "0" ? "Pit" : parseInt(result.grid);
+      const timeBehindLeader = result.Time?.time || "DNF";
+      const fastestLapTime = result.FastestLap?.Time?.time || "No time";
+      const fastestLapSpeed = result.FastestLap?.AverageSpeed?.speed || "N/A";
+
+      return {
+        driverName: `${result.Driver.givenName} ${result.Driver.familyName}`,
+        constructor: result.Constructor.name,
+        gridPosition,
+        finishTime: timeBehindLeader,
+        fastestLap: fastestLapTime,
+        averageSpeed: fastestLapSpeed,
+        points: parseInt(result.points)
+      };
+    });
+
+    setQualifyingComparison(comparison);
   }, [raceData]);
 
   // Helper functions
@@ -460,6 +485,64 @@ const RaceTracker: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {qualifyingComparison.length > 0 && (
+        <section className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <Clock className="w-6 h-6 mr-2 text-f1-red" />
+            Race Performance Analysis
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-800">
+              <thead className="bg-f1-black/50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Driver</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Constructor</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Grid</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Gap to Leader</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Fastest Lap</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Avg Speed</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Points</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {qualifyingComparison.map((driver, index) => (
+                  <tr
+                    key={driver.driverName}
+                    className="hover:bg-f1-gray/30 transition-colors duration-200"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-white">
+                      {driver.driverName}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                      {driver.constructor}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                      {driver.gridPosition}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                      {driver.finishTime}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                      {driver.fastestLap}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                      {driver.averageSpeed !== "N/A" ? `${driver.averageSpeed} km/h` : "N/A"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="px-2 py-1 rounded-full bg-f1-red/10 text-f1-red text-sm font-medium">
+                        {driver.points}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
