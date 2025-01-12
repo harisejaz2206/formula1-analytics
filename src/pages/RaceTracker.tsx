@@ -21,6 +21,7 @@ const RaceTracker: React.FC = () => {
   const [lapTimes, setLapTimes] = useState<any[]>([]);
   const [qualifyingTimes, setQualifyingTimes] = useState<any[]>([]);
   const [pitStops, setPitStops] = useState<any[]>([]);
+  const [positionChanges, setPositionChanges] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSeasons = async () => {
@@ -141,6 +142,28 @@ const RaceTracker: React.FC = () => {
     fetchLapTimes();
     fetchPitStops();
   }, [raceData, selectedSeason, selectedRound]);
+
+  useEffect(() => {
+    if (!raceData) return;
+
+    // Calculate position changes for each driver
+    const changes = raceData.Results.map((result: any) => {
+      const startPos = result.grid === "0" ? "Pit" : parseInt(result.grid);
+      const endPos = parseInt(result.position);
+      const change = startPos === "Pit" ? "N/A" : startPos - endPos;
+
+      return {
+        driverName: `${result.Driver.givenName} ${result.Driver.familyName}`,
+        constructor: result.Constructor.name,
+        startPosition: startPos,
+        endPosition: endPos,
+        positionChange: change,
+        status: result.status
+      };
+    });
+
+    setPositionChanges(changes);
+  }, [raceData]);
 
   // Helper functions
   const convertLapTimeToSeconds = (timeStr: string) => {
@@ -378,6 +401,61 @@ const RaceTracker: React.FC = () => {
                   <div className="flex justify-between">
                     <span>Total Pit Time:</span>
                     <span className="font-medium text-white">{summary.totalTime.toFixed(3)}s</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {positionChanges.length > 0 && (
+        <section className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <Trophy className="w-6 h-6 mr-2 text-f1-red" />
+            Position Changes Analysis
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {positionChanges.map((driver) => (
+              <div
+                key={driver.driverName}
+                className="bg-f1-gray/20 rounded-xl p-4 hover:bg-f1-gray/30 transition-colors duration-200 border border-f1-gray/10"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-lg font-bold text-white">{driver.driverName}</span>
+                  <span className="text-sm text-f1-silver">{driver.constructor}</span>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-f1-silver">
+                    <span>Start Position:</span>
+                    <span className="font-medium text-white">{driver.startPosition}</span>
+                  </div>
+                  <div className="flex justify-between text-f1-silver">
+                    <span>Final Position:</span>
+                    <span className="font-medium text-white">{driver.endPosition}</span>
+                  </div>
+                  <div className="flex justify-between text-f1-silver">
+                    <span>Position Change:</span>
+                    {driver.positionChange !== "N/A" ? (
+                      <span className={`font-medium ${driver.positionChange > 0
+                        ? 'text-green-400'
+                        : driver.positionChange < 0
+                          ? 'text-red-400'
+                          : 'text-white'
+                        }`}>
+                        {driver.positionChange > 0 ? '+' : ''}
+                        {driver.positionChange}
+                      </span>
+                    ) : (
+                      <span className="font-medium text-white">N/A</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-f1-silver">
+                    <span>Status:</span>
+                    <span className="font-medium text-white">{driver.status}</span>
                   </div>
                 </div>
               </div>
