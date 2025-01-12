@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-f1-black text-f1-silver font-f1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-f1-display uppercase tracking-wider;
+  }
+}
+
+@layer components {
+  .f1-card {
+    @apply bg-f1-gray bg-opacity-90 backdrop-blur-sm border border-f1-silver/10 rounded-lg shadow-lg 
+           hover:border-f1-red/50 transition-all duration-300;
+  }
+  
+  .f1-button {
+    @apply px-4 py-2 bg-f1-red text-white font-bold rounded 
+           hover:bg-red-700 transition-colors duration-300
+           uppercase tracking-wider text-sm;
+  }
+  
+  .f1-input {
+    @apply bg-f1-black border border-f1-gray rounded-md px-3 py-2
+           focus:border-f1-red focus:ring-1 focus:ring-f1-red
+           text-f1-silver placeholder-gray-500;
+  }
+  
+  .f1-select {
+    @apply f1-input appearance-none bg-f1-black;
+  }
+  
+  .f1-table {
+    @apply min-w-full divide-y divide-f1-gray/50;
+  }
+  
+  .f1-table th {
+    @apply px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-f1-silver/70;
+  }
+  
+  .f1-table td {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-f1-silver;
+  }
+}

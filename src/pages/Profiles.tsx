@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDriverStandings, getConstructorStandings } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { Users, Building2, Trophy, Flag, Medal, Target } from 'lucide-react';
 
 const Profiles: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -33,32 +34,99 @@ const Profiles: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Driver & Team Profiles</h1>
-      
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
+        <div className="relative z-10">
+          <h1 className="text-4xl font-bold text-white mb-2">Driver & Team Profiles</h1>
+          <p className="text-f1-silver/80 text-lg">Championship Standings and Statistics</p>
+        </div>
+        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
+          <Users className="w-full h-full" />
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="f1-card p-6 flex items-center space-x-4 group hover:scale-105 transition-transform duration-300">
+          <div className="p-3 bg-f1-red/10 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <Trophy className="w-6 h-6 text-f1-red" />
+          </div>
+          <div>
+            <p className="text-f1-silver/70 text-sm">Total Points</p>
+            <p className="text-2xl font-bold text-white">{drivers[0]?.points || 0}</p>
+          </div>
+        </div>
+        <div className="f1-card p-6 flex items-center space-x-4 group hover:scale-105 transition-transform duration-300">
+          <div className="p-3 bg-f1-red/10 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <Medal className="w-6 h-6 text-f1-red" />
+          </div>
+          <div>
+            <p className="text-f1-silver/70 text-sm">Race Wins</p>
+            <p className="text-2xl font-bold text-white">{drivers[0]?.wins || 0}</p>
+          </div>
+        </div>
+        <div className="f1-card p-6 flex items-center space-x-4 group hover:scale-105 transition-transform duration-300">
+          <div className="p-3 bg-f1-red/10 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <Target className="w-6 h-6 text-f1-red" />
+          </div>
+          <div>
+            <p className="text-f1-silver/70 text-sm">Constructors</p>
+            <p className="text-2xl font-bold text-white">{constructors.length}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Drivers Section */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Driver Standings</h2>
+      <section className="f1-card p-6 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <Users className="w-6 h-6 mr-2 text-f1-red" />
+            Driver Standings
+          </h2>
+        </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-800">
+            <thead className="bg-f1-black/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Constructor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wins</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Position</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Driver</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Constructor</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Points</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Wins</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-800">
               {drivers.map((driver) => (
-                <tr key={driver.position}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{driver.position}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {driver.Driver.givenName} {driver.Driver.familyName}
+                <tr
+                  key={driver.position}
+                  className="group/row hover:bg-f1-gray/30 transition-colors duration-200"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full 
+                      ${driver.position === '1' ? 'bg-f1-red text-white' :
+                        driver.position === '2' ? 'bg-gray-600 text-white' :
+                          driver.position === '3' ? 'bg-amber-700 text-white' :
+                            'bg-f1-gray/20 text-f1-silver'}`}>
+                      {driver.position}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{driver.Constructors[0].name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{driver.points}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{driver.wins}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-f1-silver font-medium">{driver.Driver.givenName} {driver.Driver.familyName}</div>
+                    <div className="text-sm text-f1-silver/60">{driver.Driver.nationality}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-f1-silver">{driver.Constructors[0].name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-3 py-1 rounded-full bg-f1-red/10 text-f1-red font-medium">
+                      {driver.points} pts
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-f1-silver">
+                      <Trophy className="w-4 h-4 mr-2 text-f1-red" />
+                      {driver.wins}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -67,27 +135,58 @@ const Profiles: React.FC = () => {
       </section>
 
       {/* Teams Section */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Constructor Standings</h2>
+      <section className="f1-card p-6 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <Building2 className="w-6 h-6 mr-2 text-f1-red" />
+            Constructor Standings
+          </h2>
+        </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-800">
+            <thead className="bg-f1-black/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Constructor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nationality</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wins</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Position</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Constructor</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Nationality</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Points</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Wins</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-800">
               {constructors.map((constructor) => (
-                <tr key={constructor.position}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{constructor.position}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{constructor.Constructor.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{constructor.Constructor.nationality}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{constructor.points}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{constructor.wins}</td>
+                <tr
+                  key={constructor.position}
+                  className="group/row hover:bg-f1-gray/30 transition-colors duration-200"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full 
+                      ${constructor.position === '1' ? 'bg-f1-red text-white' :
+                        constructor.position === '2' ? 'bg-gray-600 text-white' :
+                          constructor.position === '3' ? 'bg-amber-700 text-white' :
+                            'bg-f1-gray/20 text-f1-silver'}`}>
+                      {constructor.position}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-f1-silver">{constructor.Constructor.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-f1-silver">
+                      <Flag className="w-4 h-4 mr-2 text-f1-red" />
+                      {constructor.Constructor.nationality}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-3 py-1 rounded-full bg-f1-red/10 text-f1-red font-medium">
+                      {constructor.points} pts
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-f1-silver">
+                      <Trophy className="w-4 h-4 mr-2 text-f1-red" />
+                      {constructor.wins}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

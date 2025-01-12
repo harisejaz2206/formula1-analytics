@@ -4,6 +4,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import SeasonSelector from '../components/SeasonSelector';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Trophy, Building2, Flag, Target } from 'lucide-react';
 
 const SeasonOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -67,92 +68,169 @@ const SeasonOverview: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Season Overview</h1>
-
-      <div className="w-full md:w-1/2">
-        <label className="block text-sm font-medium text-gray-700">Season</label>
-        <SeasonSelector
-          seasons={seasons}
-          selectedSeason={selectedSeason}
-          onSeasonChange={setSelectedSeason}
-        />
+      {/* Page Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
+        <div className="relative z-10">
+          <h1 className="text-4xl font-bold text-white mb-2">2024 Season Overview</h1>
+          <p className="text-f1-silver/80 text-lg">Championship Standings and Statistics</p>
+        </div>
+        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            <path fill="currentColor" d="M73.1,-23.3C80.1,-2.3,63.8,25.2,40.6,42.6C17.4,60.1,-12.9,67.6,-38.4,56.5C-63.9,45.4,-84.6,15.6,-80.5,-11.4C-76.4,-38.4,-47.4,-62.7,-18.9,-69.5C9.6,-76.4,66.1,-44.3,73.1,-23.3Z" transform="translate(100 100)" />
+          </svg>
+        </div>
       </div>
 
-      {/* Championship Standings Section */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Championship Standings</h2>
-        
-        <div className="space-y-6">
-          {/* Driver Standings Chart */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">Top 5 Drivers</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={top5Drivers}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="points" fill="#ef4444" name="Points" />
-                  <Bar dataKey="wins" fill="#3b82f6" name="Wins" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Constructor Standings Chart */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">Top 5 Constructors</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={top5Constructors}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="points" fill="#ef4444" name="Points" />
-                  <Bar dataKey="wins" fill="#3b82f6" name="Wins" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Driver Standings Chart */}
+        <div className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <Trophy className="w-6 h-6 mr-2 text-f1-red" />
+            Top 5 Drivers
+          </h2>
+          <div className="h-[400px] relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={top5Drivers}>
+                <defs>
+                  <linearGradient id="pointsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#E10600" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#E10600" stopOpacity={0.2} />
+                  </linearGradient>
+                  <linearGradient id="winsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00FF00" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#00FF00" stopOpacity={0.2} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: '#F0F0F0' }}
+                  axisLine={{ stroke: '#333' }}
+                />
+                <YAxis
+                  tick={{ fill: '#F0F0F0' }}
+                  axisLine={{ stroke: '#333' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#15151E',
+                    border: '1px solid #333',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#F0F0F0' }}
+                />
+                <Legend
+                  wrapperStyle={{
+                    paddingTop: '20px',
+                    color: '#F0F0F0'
+                  }}
+                />
+                <Bar
+                  dataKey="points"
+                  fill="url(#pointsGradient)"
+                  name="Points"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="wins"
+                  fill="url(#winsGradient)"
+                  name="Wins"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      </section>
 
-      {/* Race Calendar Section */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Race Calendar</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Round</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Race</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Circuit</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Winner</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {seasonResults.map((race) => (
-                <tr key={race.round}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{race.round}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{race.raceName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{race.Circuit.circuitName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{race.date}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {race.Results?.[0]?.Driver ? 
-                      `${race.Results[0].Driver.givenName} ${race.Results[0].Driver.familyName}` :
-                      'TBD'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Constructor Standings Chart */}
+        <div className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <Building2 className="w-6 h-6 mr-2 text-f1-red" />
+            Top 5 Constructors
+          </h2>
+          <div className="h-[400px] relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={top5Constructors}>
+                <defs>
+                  <linearGradient id="constructorPointsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#E10600" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#E10600" stopOpacity={0.2} />
+                  </linearGradient>
+                  <linearGradient id="constructorWinsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00FF00" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#00FF00" stopOpacity={0.2} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: '#F0F0F0' }}
+                  axisLine={{ stroke: '#333' }}
+                />
+                <YAxis
+                  tick={{ fill: '#F0F0F0' }}
+                  axisLine={{ stroke: '#333' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#15151E',
+                    border: '1px solid #333',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#F0F0F0' }}
+                />
+                <Legend
+                  wrapperStyle={{
+                    paddingTop: '20px',
+                    color: '#F0F0F0'
+                  }}
+                />
+                <Bar
+                  dataKey="points"
+                  fill="url(#constructorPointsGradient)"
+                  name="Points"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="wins"
+                  fill="url(#constructorWinsGradient)"
+                  name="Wins"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </section>
+      </div>
+
+      {/* Additional Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Total Races</h3>
+            <Flag className="w-6 h-6 text-f1-red" />
+          </div>
+          <p className="text-3xl font-bold text-f1-silver">22</p>
+        </div>
+
+        <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Season Points</h3>
+            <Target className="w-6 h-6 text-f1-red" />
+          </div>
+          <p className="text-3xl font-bold text-f1-silver">1,431</p>
+        </div>
+
+        <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Different Winners</h3>
+            <Trophy className="w-6 h-6 text-f1-red" />
+          </div>
+          <p className="text-3xl font-bold text-f1-silver">5</p>
+        </div>
+      </div>
     </div>
   );
 };
