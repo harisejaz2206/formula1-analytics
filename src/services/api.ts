@@ -43,10 +43,13 @@ export const getRaceResults = async (
 };
 
 export const getLapTimes = async (
-  season: string = "current",
-  round: string = "last"
+  season: string,
+  round: string,
+  driverId: string
 ) => {
-  const data = await fetchData(`/${season}/${round}/laps.json`);
+  const data = await fetchData(
+    `/${season}/${round}/drivers/${driverId}/laps.json?limit=100`
+  );
   return data.RaceTable.Races[0]?.Laps || [];
 };
 
@@ -62,5 +65,11 @@ export const getCircuitInfo = async (circuitId: string) => {
 
 export const getSeasonResults = async (season: string = "current") => {
   const data = await fetchData(`/${season}/results.json?limit=1000`);
+  console.log("API Response:", data);
   return data.RaceTable.Races || [];
+};
+
+export const getPitStops = async (season: string, round: string) => {
+  const data = await fetchData(`/${season}/${round}/pitstops.json`);
+  return data.RaceTable.Races[0]?.PitStops || [];
 };

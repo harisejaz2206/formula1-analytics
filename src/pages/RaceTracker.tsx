@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getRaceResults, getLapTimes, getSeasons, getRounds } from '../services/api';
+import { getRaceResults, getLapTimes, getSeasons, getRounds, getPitStops } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import SeasonSelector from '../components/SeasonSelector';
 import RoundSelector from '../components/RoundSelector';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Trophy, Flag, Clock, MapPin } from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, ZAxis
+} from 'recharts';
+import { Trophy, Flag, Clock, MapPin, Timer } from 'lucide-react';
 
 const RaceTracker: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -16,6 +19,8 @@ const RaceTracker: React.FC = () => {
   const [selectedRound, setSelectedRound] = useState('1');
   const [raceData, setRaceData] = useState<any>(null);
   const [lapTimes, setLapTimes] = useState<any[]>([]);
+  const [qualifyingTimes, setQualifyingTimes] = useState<any[]>([]);
+  const [pitStops, setPitStops] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSeasons = async () => {
@@ -75,6 +80,111 @@ const RaceTracker: React.FC = () => {
       fetchData();
     }
   }, [selectedSeason, selectedRound]);
+
+  useEffect(() => {
+    const fetchLapTimes = async () => {
+      if (!raceData) return;
+
+      try {
+        const top5Drivers = raceData.Results.slice(0, 5);
+        const allLapTimes = await Promise.all(
+          top5Drivers.map(async (result) => {
+            const laps = await getLapTimes(selectedSeason, selectedRound, result.Driver.driverId);
+            return {
+              driver: `${result.Driver.givenName} ${result.Driver.familyName}`,
+              laps: laps.map((lap: any) => ({
+                lapNumber: parseInt(lap.number),
+                time: lap.Timings[0]?.time || null
+              }))
+            };
+          })
+        );
+
+        // Transform data for the chart
+        const chartData = allLapTimes[0].laps.map((lap: any, index: number) => {
+          const lapData: any = { lap: lap.lapNumber };
+          allLapTimes.forEach((driver) => {
+            if (driver.laps[index]?.time) {
+              lapData[driver.driver] = convertLapTimeToSeconds(driver.laps[index].time);
+            }
+          });
+          return lapData;
+        });
+
+        setLapTimes(chartData);
+      } catch (error) {
+        console.error('Error fetching lap times:', error);
+      }
+    };
+
+    // Fetch pit stops data
+    const fetchPitStops = async () => {
+      if (!raceData) return;
+
+      try {
+        const pitStopsData = await getPitStops(selectedSeason, selectedRound);
+        const transformedPitStops = pitStopsData.map((stop: any) => ({
+          driverName: raceData.Results.find((r: any) => r.Driver.driverId === stop.driverId)
+            ?.Driver.familyName || stop.driverId,
+          stop: parseInt(stop.stop),
+          lap: parseInt(stop.lap),
+          duration: parseFloat(stop.duration),
+          cumulativeTime: convertDurationToSeconds(stop.duration)
+        }));
+
+        setPitStops(transformedPitStops);
+      } catch (error) {
+        console.error('Error fetching pit stops:', error);
+      }
+    };
+
+    fetchLapTimes();
+    fetchPitStops();
+  }, [raceData, selectedSeason, selectedRound]);
+
+  // Helper functions
+  const convertLapTimeToSeconds = (timeStr: string) => {
+    const [minutes, seconds] = timeStr.split(':');
+    return parseFloat(minutes) * 60 + parseFloat(seconds);
+  };
+
+  const convertDurationToSeconds = (duration: string) => {
+    return parseFloat(duration);
+  };
+
+  // Simplified pit stop data transformation
+  const transformPitStops = (data: any[]) => {
+    return data.map((stop: any) => ({
+      driverName: raceData?.Results.find(
+        (r: any) => r.Driver.driverId === stop.driverId
+      )?.Driver.familyName || stop.driverId,
+      lap: parseInt(stop.lap),
+      duration: parseFloat(stop.duration),
+      stop: parseInt(stop.stop)
+    }));
+  };
+
+  // Group pit stops by driver for the summary
+  const getPitStopSummary = (data: any[]) => {
+    const summary = data.reduce((acc: any, stop: any) => {
+      if (!acc[stop.driverName]) {
+        acc[stop.driverName] = {
+          stops: 0,
+          totalTime: 0
+        };
+      }
+      acc[stop.driverName].stops++;
+      acc[stop.driverName].totalTime += stop.duration;
+      return acc;
+    }, {});
+
+    return Object.entries(summary).map(([driver, data]: [string, any]) => ({
+      driver,
+      stops: data.stops,
+      avgDuration: data.totalTime / data.stops,
+      totalTime: data.totalTime
+    }));
+  };
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
@@ -182,39 +292,27 @@ const RaceTracker: React.FC = () => {
         </section>
       )}
 
+      {/* Updated Lap Times Analysis */}
       {lapTimes.length > 0 && (
         <section className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
             <Clock className="w-6 h-6 mr-2 text-f1-red" />
             Lap Times Analysis
           </h2>
-
           <div className="h-[400px] relative">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lapTimes}>
-                <defs>
-                  {raceData?.Results.slice(0, 5).map((result: any, index: number) => (
-                    <linearGradient
-                      key={result.Driver.driverId}
-                      id={`gradient-${result.Driver.driverId}`}
-                      x1="0" y1="0" x2="0" y2="1"
-                    >
-                      <stop offset="5%" stopColor={`hsl(${index * 60}, 70%, 50%)`} stopOpacity={0.8} />
-                      <stop offset="95%" stopColor={`hsl(${index * 60}, 70%, 50%)`} stopOpacity={0.2} />
-                    </linearGradient>
-                  ))}
-                </defs>
+              <LineChart data={lapTimes} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis
                   dataKey="lap"
                   tick={{ fill: '#F0F0F0' }}
-                  axisLine={{ stroke: '#333' }}
+                  label={{ value: 'Lap Number', position: 'bottom', fill: '#F0F0F0', dy: 10 }}
                 />
                 <YAxis
                   tick={{ fill: '#F0F0F0' }}
-                  axisLine={{ stroke: '#333' }}
+                  label={{ value: 'Lap Time (seconds)', angle: -90, position: 'insideLeft', fill: '#F0F0F0', dx: -10 }}
+                  domain={['dataMin - 1', 'dataMax + 1']}
                 />
                 <Tooltip
                   contentStyle={{
@@ -222,11 +320,14 @@ const RaceTracker: React.FC = () => {
                     border: '1px solid #333',
                     borderRadius: '8px'
                   }}
+                  formatter={(value: any) => [`${value.toFixed(3)}s`]}
                   labelStyle={{ color: '#F0F0F0' }}
                 />
                 <Legend
+                  verticalAlign="top"
+                  height={36}
                   wrapperStyle={{
-                    paddingTop: '20px',
+                    paddingBottom: '20px',
                     color: '#F0F0F0'
                   }}
                 />
@@ -234,16 +335,53 @@ const RaceTracker: React.FC = () => {
                   <Line
                     key={result.Driver.driverId}
                     type="monotone"
-                    dataKey={result.Driver.driverId}
-                    name={`${result.Driver.givenName} ${result.Driver.familyName}`}
-                    stroke={`url(#gradient-${result.Driver.driverId})`}
+                    dataKey={`${result.Driver.givenName} ${result.Driver.familyName}`}
+                    name={`${result.Driver.familyName}`} // Simplified legend name
+                    stroke={`hsl(${index * 60}, 70%, 50%)`}
                     strokeWidth={2}
-                    dot={{ fill: `hsl(${index * 60}, 70%, 50%)` }}
-                    activeDot={{ r: 8 }}
+                    dot={false}
+                    activeDot={{ r: 4 }}
                   />
                 ))}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </section>
+      )}
+
+      {/* Updated Pit Stop Analysis */}
+      {pitStops.length > 0 && (
+        <section className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <Timer className="w-6 h-6 mr-2 text-f1-red" />
+            Pit Stop Analysis
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {getPitStopSummary(pitStops).map((summary: any) => (
+              <div
+                key={summary.driver}
+                className="bg-f1-gray/20 rounded-xl p-4 hover:bg-f1-gray/30 transition-colors duration-200 border border-f1-gray/10"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-lg font-bold text-white">{summary.driver}</span>
+                  <span className="px-3 py-1 rounded-full bg-f1-red/10 text-f1-red font-medium">
+                    {summary.stops} {summary.stops === 1 ? 'stop' : 'stops'}
+                  </span>
+                </div>
+                <div className="space-y-2 text-sm text-f1-silver/80">
+                  <div className="flex justify-between">
+                    <span>Average Duration:</span>
+                    <span className="font-medium text-white">{summary.avgDuration.toFixed(3)}s</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Pit Time:</span>
+                    <span className="font-medium text-white">{summary.totalTime.toFixed(3)}s</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}

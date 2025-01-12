@@ -38,11 +38,15 @@ const SeasonOverview: React.FC = () => {
           getSeasonResults(selectedSeason)
         ]);
 
+        console.log('Raw results:', results);
+
         // Transform data for cumulative points progression
         const top5Drivers = drivers.slice(0, 5).map(driver => ({
           id: driver.Driver.driverId,
           name: `${driver.Driver.givenName} ${driver.Driver.familyName}`
         }));
+
+        console.log('Top 5 drivers:', top5Drivers);
 
         const pointsData = results.map((race: any) => {
           const racePoints: any = {
@@ -58,6 +62,8 @@ const SeasonOverview: React.FC = () => {
           return racePoints;
         });
 
+        console.log('Points data:', pointsData);
+
         // Calculate cumulative points
         const cumulativeData = pointsData.map((race: any, index: number) => {
           const cumulativeRace: any = { round: race.round, raceName: race.raceName };
@@ -71,11 +77,14 @@ const SeasonOverview: React.FC = () => {
           return cumulativeRace;
         });
 
+        console.log('Cumulative data:', cumulativeData);
+
         setDriverStandings(drivers);
         setConstructorStandings(constructors);
         setSeasonResults(results);
         setCumulativePoints(cumulativeData);
       } catch (err) {
+        console.error('Error fetching data:', err);
         setError('Failed to load season data');
       } finally {
         setLoading(false);
