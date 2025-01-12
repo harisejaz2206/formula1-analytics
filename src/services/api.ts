@@ -61,6 +61,6 @@ export const getCircuitInfo = async (circuitId: string) => {
 };
 
 export const getSeasonResults = async (season: string = "current") => {
-  const data = await fetchData(`/${season}/results.json`);
+  const data = await fetchData(`/${season}/results.json?limit=1000`);
   return data.RaceTable.Races || [];
 };

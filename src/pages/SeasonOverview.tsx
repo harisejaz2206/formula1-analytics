@@ -14,6 +14,7 @@ const SeasonOverview: React.FC = () => {
   const [driverStandings, setDriverStandings] = useState<any[]>([]);
   const [constructorStandings, setConstructorStandings] = useState<any[]>([]);
   const [seasonResults, setSeasonResults] = useState<any[]>([]);
+  const [cumulativePoints, setCumulativePoints] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSeasons = async () => {
@@ -36,9 +37,44 @@ const SeasonOverview: React.FC = () => {
           getConstructorStandings(selectedSeason),
           getSeasonResults(selectedSeason)
         ]);
+
+        // Transform data for cumulative points progression
+        const top5Drivers = drivers.slice(0, 5).map(driver => ({
+          id: driver.Driver.driverId,
+          name: `${driver.Driver.givenName} ${driver.Driver.familyName}`
+        }));
+
+        const pointsData = results.map((race: any) => {
+          const racePoints: any = {
+            round: parseInt(race.round),
+            raceName: race.raceName
+          };
+
+          top5Drivers.forEach(driver => {
+            const driverResult = race.Results.find((r: any) => r.Driver.driverId === driver.id);
+            racePoints[driver.name] = driverResult ? parseInt(driverResult.points) : 0;
+          });
+
+          return racePoints;
+        });
+
+        // Calculate cumulative points
+        const cumulativeData = pointsData.map((race: any, index: number) => {
+          const cumulativeRace: any = { round: race.round, raceName: race.raceName };
+
+          top5Drivers.forEach(driver => {
+            cumulativeRace[driver.name] = pointsData
+              .slice(0, index + 1)
+              .reduce((sum, r) => sum + (r[driver.name] || 0), 0);
+          });
+
+          return cumulativeRace;
+        });
+
         setDriverStandings(drivers);
         setConstructorStandings(constructors);
         setSeasonResults(results);
+        setCumulativePoints(cumulativeData);
       } catch (err) {
         setError('Failed to load season data');
       } finally {
@@ -202,6 +238,49 @@ const SeasonOverview: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Updated Points Progression Chart */}
+      <div className="f1-card p-6 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <Trophy className="w-6 h-6 mr-2 text-f1-red" />
+          Points Progression
+        </h2>
+        <div className="h-[400px] relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={cumulativePoints}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis
+                dataKey="round"
+                tick={{ fill: '#F0F0F0' }}
+                axisLine={{ stroke: '#333' }}
+              />
+              <YAxis
+                tick={{ fill: '#F0F0F0' }}
+                axisLine={{ stroke: '#333' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#15151E',
+                  border: '1px solid #333',
+                  borderRadius: '8px'
+                }}
+              />
+              <Legend wrapperStyle={{ color: '#F0F0F0' }} />
+              {driverStandings.slice(0, 5).map((driver: any, index: number) => (
+                <Line
+                  key={driver.Driver.driverId}
+                  type="monotone"
+                  dataKey={`${driver.Driver.givenName} ${driver.Driver.familyName}`}
+                  stroke={`hsl(${index * 60}, 70%, 50%)`}
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
