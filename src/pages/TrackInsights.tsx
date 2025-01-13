@@ -3,7 +3,7 @@ import { getCircuits, getSeasons } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import SeasonSelector from '../components/SeasonSelector';
-import { MapPin, Calendar, Globe2, Trophy, Flag, ExternalLink, Clock } from 'lucide-react';
+import { MapPin, Calendar, Globe2, Trophy, Flag, ExternalLink, Clock, Zap, Activity } from 'lucide-react';
 
 interface Circuit {
   circuitId: string;
@@ -124,11 +124,36 @@ const TrackInsights: React.FC = () => {
               Circuit Map
             </h2>
             <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
-              <iframe
-                className="w-full h-[400px] rounded-lg border-2 border-f1-gray/20"
-                src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${selectedCircuit.Location.lat},${selectedCircuit.Location.long}&zoom=14`}
-                allowFullScreen
-              ></iframe>
+              <div className="w-full h-[400px] rounded-lg border-2 border-f1-gray/20 bg-f1-black/50 
+                              flex flex-col items-center justify-center p-8 text-center">
+                <MapPin className="w-16 h-16 text-f1-red mb-4 animate-bounce" />
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  Interactive Circuit Map Coming Soon
+                </h3>
+                <p className="text-f1-silver/60 max-w-md mb-6">
+                  We're working on bringing you detailed 3D circuit maps with sector information,
+                  DRS zones, and historical racing lines.
+                </p>
+                <div className="flex gap-4 text-sm">
+                  <div className="flex items-center text-f1-silver/80">
+                    <Clock className="w-4 h-4 mr-2 text-f1-red" />
+                    Sector Times
+                  </div>
+                  <div className="flex items-center text-f1-silver/80">
+                    <Zap className="w-4 h-4 mr-2 text-f1-red" />
+                    DRS Zones
+                  </div>
+                  <div className="flex items-center text-f1-silver/80">
+                    <Activity className="w-4 h-4 mr-2 text-f1-red" />
+                    Racing Lines
+                  </div>
+                </div>
+                <div className="mt-8 flex gap-2">
+                  <span className="w-2 h-2 rounded-full bg-f1-red animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full bg-f1-red animate-pulse delay-100"></span>
+                  <span className="w-2 h-2 rounded-full bg-f1-red animate-pulse delay-200"></span>
+                </div>
+              </div>
             </div>
           </section>
 
