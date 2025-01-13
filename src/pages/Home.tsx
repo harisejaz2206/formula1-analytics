@@ -9,37 +9,55 @@ const Home: React.FC = () => {
     const features = [
         {
             icon: Timer,
-            title: "Live Race Tracking",
-            description: "Real-time race positions, lap times, and pit strategies",
+            title: "Race Tracker",
+            description: "Track live race positions, lap times, pit stops, and detailed performance analysis",
             link: "/live"
         },
         {
             icon: Users,
             title: "Driver & Team Profiles",
-            description: "Comprehensive statistics and history for every driver and constructor",
+            description: "In-depth statistics, team battles, and comprehensive performance metrics",
             link: "/profiles"
         },
         {
             icon: MapPin,
-            title: "Circuit Analysis",
-            description: "Detailed track insights and historical race data",
+            title: "Track Insights",
+            description: "Circuit analysis, track records, and historical race data",
             link: "/tracks"
         },
         {
             icon: TrendingUp,
             title: "Season Overview",
-            description: "In-depth analysis of the current F1 season",
+            description: "Championship standings, points progression, and constructor performance analysis",
             link: "/season"
         }
     ];
 
     const quickLinks = [
-        { icon: Calendar, label: "Race Calendar", path: "/season" },
-        { icon: Car, label: "Constructor Standings", path: "/profiles" },
-        { icon: Star, label: "Driver Rankings", path: "/profiles" },
-        { icon: Activity, label: "Latest Results", path: "/live" },
-        { icon: MapPin, label: "Next Race Track", path: "/tracks" },
-        { icon: Trophy, label: "Championship Leaders", path: "/season" },
+        {
+            icon: Timer,
+            label: "Live Race",
+            subtext: "Real-time race tracking & analysis",
+            path: "/live"
+        },
+        {
+            icon: Trophy,
+            label: "Standings",
+            subtext: "Championship points & rankings",
+            path: "/season"
+        },
+        {
+            icon: Users,
+            label: "Teams",
+            subtext: "Constructor & driver profiles",
+            path: "/profiles"
+        },
+        {
+            icon: MapPin,
+            label: "Circuits",
+            subtext: "Track details & race history",
+            path: "/tracks"
+        },
     ];
 
     return (
@@ -77,17 +95,20 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
-            {/* Quick Links Section - New */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Quick Links Section - With Subtexts */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {quickLinks.map((link) => (
                     <NavLink
                         key={link.label}
                         to={link.path}
-                        className="f1-card p-4 flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-300 group"
+                        className="f1-card p-6 flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-300 group"
                     >
-                        <link.icon className="w-6 h-6 text-f1-red mb-2 group-hover:scale-110 transition-transform duration-300" />
-                        <span className="text-sm text-f1-silver group-hover:text-white transition-colors duration-300">
+                        <link.icon className="w-8 h-8 text-f1-red mb-3 group-hover:scale-110 transition-transform duration-300" />
+                        <span className="text-lg font-bold text-white mb-1">
                             {link.label}
+                        </span>
+                        <span className="text-sm text-f1-silver/80 group-hover:text-f1-silver transition-colors duration-300">
+                            {link.subtext}
                         </span>
                     </NavLink>
                 ))}

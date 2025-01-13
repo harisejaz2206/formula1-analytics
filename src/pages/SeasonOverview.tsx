@@ -3,13 +3,13 @@ import { getDriverStandings, getConstructorStandings, getSeasons, getSeasonResul
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import SeasonSelector from '../components/SeasonSelector';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Trophy, Building2, Flag, Target } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
+import { Trophy, Building2, Flag, Target, Calendar, ChevronDown, TrendingUp } from 'lucide-react';
 
 const SeasonOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [seasons, setSeasons] = useState<any[]>([]);
+  const [seasons, setSeasons] = useState<string[]>([]);
   const [selectedSeason, setSelectedSeason] = useState('2024');
   const [driverStandings, setDriverStandings] = useState<any[]>([]);
   const [constructorStandings, setConstructorStandings] = useState<any[]>([]);
@@ -20,7 +20,8 @@ const SeasonOverview: React.FC = () => {
     const fetchSeasons = async () => {
       try {
         const seasonsData = await getSeasons();
-        setSeasons(seasonsData);
+        const seasonYears = seasonsData.map((season: any) => season.season);
+        setSeasons(seasonYears);
       } catch (err) {
         setError('Failed to load seasons');
       }
@@ -111,6 +112,11 @@ const SeasonOverview: React.FC = () => {
     wins: parseInt(constructor.wins)
   }));
 
+  // Calculate total races once and reuse it
+  const totalRaces = constructorStandings.reduce((total, constructor) =>
+    total + parseInt(constructor.wins || '0'), 0
+  ); // This will be 24
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -123,6 +129,35 @@ const SeasonOverview: React.FC = () => {
           <svg viewBox="0 0 200 200" className="w-full h-full">
             <path fill="currentColor" d="M73.1,-23.3C80.1,-2.3,63.8,25.2,40.6,42.6C17.4,60.1,-12.9,67.6,-38.4,56.5C-63.9,45.4,-84.6,15.6,-80.5,-11.4C-76.4,-38.4,-47.4,-62.7,-18.9,-69.5C9.6,-76.4,66.1,-44.3,73.1,-23.3Z" transform="translate(100 100)" />
           </svg>
+        </div>
+      </div>
+
+      <div className="f1-card p-4 mb-8 flex items-center justify-between">
+        <div className="flex items-center">
+          <Calendar className="w-6 h-6 text-f1-red mr-2" />
+          <h2 className="text-xl font-bold text-white">Season Overview</h2>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="f1-card px-4 py-2 pr-8 text-white bg-f1-gray/20 rounded-lg cursor-pointer 
+              hover:bg-f1-gray/30 transition-colors duration-200 appearance-none border border-f1-gray/10"
+          >
+            <option value="2024">2024 (Current)</option>
+            <option value="2023">2023</option>
+            {seasons
+              .filter(season => season !== '2024' && season !== '2023')
+              .sort((a, b) => parseInt(b) - parseInt(a))
+              .map((season) => (
+                <option key={season} value={season}>
+                  {season}
+                </option>
+              ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <ChevronDown className="w-4 h-4 text-f1-red" />
+          </div>
         </div>
       </div>
 
@@ -159,11 +194,14 @@ const SeasonOverview: React.FC = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#15151E',
-                    border: '1px solid #333',
-                    borderRadius: '8px'
+                    backgroundColor: '#1E1E1E',
+                    border: '1px solid #444',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
                   }}
-                  labelStyle={{ color: '#F0F0F0' }}
+                  labelStyle={{ color: '#FFFFFF' }}
+                  itemStyle={{ color: '#FFFFFF' }}
                 />
                 <Legend
                   wrapperStyle={{
@@ -220,11 +258,14 @@ const SeasonOverview: React.FC = () => {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#15151E',
-                    border: '1px solid #333',
-                    borderRadius: '8px'
+                    backgroundColor: '#1E1E1E',
+                    border: '1px solid #444',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
                   }}
-                  labelStyle={{ color: '#F0F0F0' }}
+                  labelStyle={{ color: '#FFFFFF' }}
+                  itemStyle={{ color: '#FFFFFF' }}
                 />
                 <Legend
                   wrapperStyle={{
@@ -272,10 +313,14 @@ const SeasonOverview: React.FC = () => {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#15151E',
-                  border: '1px solid #333',
-                  borderRadius: '8px'
+                  backgroundColor: '#1E1E1E',
+                  border: '1px solid #444',
+                  borderRadius: '8px',
+                  color: '#FFFFFF',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
                 }}
+                labelStyle={{ color: '#FFFFFF' }}
+                itemStyle={{ color: '#FFFFFF' }}
               />
               <Legend wrapperStyle={{ color: '#F0F0F0' }} />
               {driverStandings.slice(0, 5).map((driver: any, index: number) => (
@@ -300,7 +345,7 @@ const SeasonOverview: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">Total Races</h3>
             <Flag className="w-6 h-6 text-f1-red" />
           </div>
-          <p className="text-3xl font-bold text-f1-silver">22</p>
+          <p className="text-3xl font-bold text-f1-silver">{totalRaces}</p>
         </div>
 
         <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
@@ -317,6 +362,325 @@ const SeasonOverview: React.FC = () => {
             <Trophy className="w-6 h-6 text-f1-red" />
           </div>
           <p className="text-3xl font-bold text-f1-silver">5</p>
+        </div>
+      </div>
+
+      {/* Add new Performance Trends section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Average Points Per Race */}
+        <div className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <TrendingUp className="w-6 h-6 mr-2 text-f1-red" />
+            Average Points Per Race
+          </h2>
+          <div className="h-[400px] relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={driverStandings.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis
+                  dataKey={(driver) => `${driver.Driver.givenName.charAt(0)}. ${driver.Driver.familyName}`}
+                  tick={{
+                    fill: '#F0F0F0',
+                    fontSize: 12,
+                    fontWeight: 500
+                  }}
+                  angle={-35}
+                  textAnchor="end"
+                  height={60}
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                  tick={{ fill: '#F0F0F0' }}
+                  domain={[0, 30]}
+                  tickCount={7}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1E1E1E',
+                    border: '1px solid #444',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                  }}
+                  labelStyle={{ color: '#FFFFFF' }}
+                  itemStyle={{ color: '#FFFFFF' }}
+                  formatter={(value) => [`${value} points`, "Average Points"]}
+                  labelFormatter={(label) => `${label}`}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
+                />
+                <Bar
+                  dataKey={(driver) => {
+                    const driverResults = seasonResults.flatMap(race =>
+                      race.Results.filter((result: any) =>
+                        result.Driver.driverId === driver.Driver.driverId &&
+                        parseInt(result.points) > 0
+                      )
+                    );
+
+                    const pointsScoringRaces = driverResults.length;
+                    const totalPoints = driverResults.reduce((sum, result) =>
+                      sum + parseInt(result.points), 0
+                    );
+
+                    return pointsScoringRaces > 0
+                      ? (totalPoints / pointsScoringRaces).toFixed(1)
+                      : "0.0";
+                  }}
+                  name="Avg Points per Points Finish"
+                  radius={[4, 4, 0, 0]}
+                >
+                  {driverStandings.slice(0, 10).map((entry, index) => (
+                    <Cell
+                      key={index}
+                      fill={[
+                        '#FF1E1E', // Red Bull-inspired
+                        '#DC0000', // Ferrari-inspired
+                        '#00D2BE', // Mercedes-inspired
+                        '#FF8700', // McLaren-inspired
+                        '#2293D1', // Alpine-inspired
+                        '#005AFF', // Williams-inspired
+                        '#006F62', // Aston Martin-inspired
+                        '#52E252', // Haas-inspired
+                        '#C92D4B', // Alfa Romeo-inspired
+                        '#4E5BCE'  // AlphaTauri-inspired
+                      ][index]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Win Distribution Pie Chart */}
+        <div className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+            <Trophy className="w-6 h-6 mr-2 text-f1-red" />
+            Win Distribution
+          </h2>
+          <div className="h-[400px] relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={constructorStandings.map(constructor => ({
+                    name: constructor.Constructor.name,
+                    value: parseInt(constructor.points),
+                    percentage: ((parseInt(constructor.points) / 1431) * 100).toFixed(1)
+                  }))}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={140}
+                  labelLine={false}
+                  label={({ name, percentage, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                    if (parseFloat(percentage) < 5) return null;
+
+                    const RADIAN = Math.PI / 180;
+                    const radius = outerRadius * 1.1;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="#F0F0F0"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        fontSize="12"
+                        fontWeight="500"
+                      >
+                        {`${name}: ${percentage}%`}
+                      </text>
+                    );
+                  }}
+                >
+                  {constructorStandings.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={[
+                        '#00D2BE',
+                        '#FF1E1E',
+                        '#DC0000',
+                        '#FF8700',
+                        '#006F62',
+                        '#2293D1',
+                        '#005AFF',
+                        '#52E252',
+                        '#C92D4B',
+                        '#4E5BCE'
+                      ][index]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1E1E1E',
+                    border: '1px solid #444',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                  }}
+                  labelStyle={{ color: '#FFFFFF' }}
+                  itemStyle={{ color: '#FFFFFF' }}
+                  formatter={(value, name, props) => [
+                    `${value} points (${props.payload.percentage}%)`,
+                    name
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Constructor Performance Comparison */}
+      <div className="f1-card p-6 mb-8">
+        <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <Building2 className="w-6 h-6 mr-2 text-f1-red" />
+          Constructor Performance
+        </h2>
+        <div className="space-y-4">
+          {constructorStandings.map((constructor, index) => {
+            const totalPoints = parseInt(constructor.points);
+            const percentage = (totalPoints / parseInt(constructorStandings[0].points)) * 100;
+            return (
+              <div key={constructor.Constructor.constructorId} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-f1-silver font-medium">
+                    {constructor.Constructor.name}
+                  </span>
+                  <span className="text-f1-silver">
+                    {totalPoints} pts
+                  </span>
+                </div>
+                <div className="h-2 bg-f1-gray/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: `hsl(${index * 36}, 70%, 50%)`
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Add Constructor Performance Comparison */}
+      <div className="f1-card p-6 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <Trophy className="w-6 h-6 mr-2 text-f1-red" />
+          Championship Points Share
+        </h2>
+        <div className="h-[400px] relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={constructorStandings.map(constructor => ({
+                  name: constructor.Constructor.name,
+                  value: parseInt(constructor.points),
+                  percentage: ((parseInt(constructor.points) / 1431) * 100).toFixed(1),
+                  wins: parseInt(constructor.wins)
+                }))}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={140}
+                innerRadius={80}
+                labelLine={false}
+                label={({ name, percentage, wins, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                  if (parseFloat(percentage) < 5) return null;
+
+                  const RADIAN = Math.PI / 180;
+                  const radius = outerRadius * 1.2;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                  return (
+                    <g>
+                      <text
+                        x={x}
+                        y={y}
+                        fill="#F0F0F0"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        fontSize="14"
+                        fontWeight="bold"
+                      >
+                        {name}
+                      </text>
+                      <text
+                        x={x}
+                        y={y + 20}
+                        fill="#F0F0F0"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        fontSize="12"
+                        opacity="0.8"
+                      >
+                        {`${percentage}% (${wins || 0}/${totalRaces} wins)`}
+                      </text>
+                    </g>
+                  );
+                }}
+              >
+                {constructorStandings.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={[
+                      '#00D2BE',
+                      '#FF1E1E',
+                      '#DC0000',
+                      '#FF8700',
+                      '#006F62',
+                      '#2293D1',
+                      '#005AFF',
+                      '#52E252',
+                      '#C92D4B',
+                      '#4E5BCE'
+                    ][index]}
+                    strokeWidth={2}
+                    stroke="#15151E"
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1E1E1E',
+                  border: '1px solid #444',
+                  borderRadius: '8px',
+                  color: '#FFFFFF',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                }}
+                labelStyle={{ color: '#FFFFFF' }}
+                itemStyle={{ color: '#FFFFFF' }}
+                formatter={(value, name, props) => [
+                  <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                    {`${value} points (${props.payload.percentage}%)`}
+                    <br />
+                    <span style={{ fontSize: '14px', opacity: 0.8 }}>
+                      {`${props.payload.wins || 0} wins out of ${totalRaces} races`}
+                    </span>
+                  </span>,
+                  <span style={{ color: props.color }}>{name}</span>
+                ]}
+              />
+              <text x="50%" y="50%" textAnchor="middle" fill="#F0F0F0" fontSize="16" fontWeight="bold">
+                Total Points
+              </text>
+              <text x="50%" y="58%" textAnchor="middle" fill="#F0F0F0" fontSize="20" fontWeight="bold">
+                1,431
+              </text>
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

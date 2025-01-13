@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Flag, Menu, X, Timer, Users, MapPin, TrendingUp } from 'lucide-react';
+import { Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
     { path: '/profiles', label: 'Drivers & Teams', icon: Users },
     { path: '/tracks', label: 'Track Insights', icon: MapPin },
     { path: '/season', label: 'Season Overview', icon: TrendingUp },
+    { path: '/guide', label: 'F1 Guide', icon: BookOpen },
   ];
 
   return (
