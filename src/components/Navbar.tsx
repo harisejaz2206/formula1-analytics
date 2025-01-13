@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen } from 'lucide-react';
+import { Home, Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +16,7 @@ const Navbar: React.FC = () => {
   }, []);
 
   const navItems = [
+    { path: '/', label: 'Home', icon: Home },
     { path: '/live', label: 'Race Tracker', icon: Timer },
     { path: '/profiles', label: 'Drivers & Teams', icon: Users },
     { path: '/tracks', label: 'Track Insights', icon: MapPin },
@@ -39,9 +40,14 @@ const Navbar: React.FC = () => {
               className="flex-shrink-0 flex items-center space-x-3 group"
             >
               <Flag className="h-8 w-8 text-f1-red transform group-hover:rotate-12 transition-transform duration-300" />
-              <span className="font-f1-display text-2xl font-bold text-white">
-                F1 Tracker
-              </span>
+              <div className="flex flex-col">
+                <span className="font-f1-display text-2xl font-bold text-white tracking-wider">
+                  F1<span className="text-f1-red">IQ</span>
+                </span>
+                <span className="text-xs text-f1-silver/60 tracking-widest">
+                  FORMULA 1 INSIGHTS
+                </span>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
