@@ -9,6 +9,40 @@ const Profiles: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [constructors, setConstructors] = useState<any[]>([]);
+  const [teamBattles, setTeamBattles] = useState<any[]>([]);
+
+  const calculateTeamBattles = (driversData: any[]) => {
+    // Group drivers by constructor
+    const constructorGroups = driversData.reduce((groups: any, driver: any) => {
+      const constructor = driver.Constructors[0].name;
+      if (!groups[constructor]) {
+        groups[constructor] = [];
+      }
+      groups[constructor].push({
+        name: `${driver.Driver.givenName} ${driver.Driver.familyName}`,
+        points: parseInt(driver.points),
+        wins: parseInt(driver.wins),
+        position: parseInt(driver.position)
+      });
+      return groups;
+    }, {});
+
+    // Create team battle comparisons
+    return Object.entries(constructorGroups)
+      .filter(([_, drivers]) => Array.isArray(drivers) && drivers.length === 2)
+      .map(([constructor, drivers]) => {
+        const typedDrivers = drivers as any[];
+        const pointsTotal = typedDrivers[0].points + typedDrivers[1].points;
+        const driver1Percentage = pointsTotal === 0 ? 50 : (typedDrivers[0].points / pointsTotal) * 100;
+
+        return {
+          constructor,
+          driver1: typedDrivers[0],
+          driver2: typedDrivers[1],
+          pointsPercentage: driver1Percentage
+        };
+      });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -19,6 +53,7 @@ const Profiles: React.FC = () => {
         ]);
         setDrivers(driversData);
         setConstructors(constructorsData);
+        setTeamBattles(calculateTeamBattles(driversData));
       } catch (err) {
         setError('Failed to load profile data');
       } finally {
@@ -193,6 +228,68 @@ const Profiles: React.FC = () => {
           </table>
         </div>
       </section>
+
+      {teamBattles.length > 0 && (
+        <section className="f1-card p-6 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <h2 className="text-2xl font-bold text-white flex items-center mb-6">
+            <Users className="w-6 h-6 mr-2 text-f1-red" />
+            Teammate Battles
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {teamBattles.map((battle) => (
+              <div
+                key={battle.constructor}
+                className="bg-f1-gray/20 rounded-xl p-4 hover:bg-f1-gray/30 transition-colors duration-200"
+              >
+                <div className="mb-2">
+                  <h3 className="text-lg font-bold text-white">{battle.constructor}</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-f1-silver">
+                      {battle.driver1.name}
+                      <span className="ml-2 px-2 py-1 rounded-full bg-f1-red/10 text-f1-red">
+                        {battle.driver1.points} pts
+                      </span>
+                    </span>
+                    <span className="text-f1-silver">
+                      <span className="mr-2 px-2 py-1 rounded-full bg-f1-red/10 text-f1-red">
+                        {battle.driver2.points} pts
+                      </span>
+                      {battle.driver2.name}
+                    </span>
+                  </div>
+
+                  <div className="relative h-2 bg-f1-gray/30 rounded-full overflow-hidden">
+                    <div
+                      className="absolute left-0 top-0 h-full bg-f1-red transition-all duration-500"
+                      style={{ width: `${battle.pointsPercentage}%` }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between text-xs text-f1-silver/70">
+                    <div>
+                      <span className="mr-2">Championship: P{battle.driver1.position}</span>
+                      <span className="px-2 py-1 rounded-full bg-f1-red/10 text-f1-red">
+                        {battle.driver1.wins} {battle.driver1.wins === 1 ? 'win' : 'wins'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="px-2 py-1 rounded-full bg-f1-red/10 text-f1-red">
+                        {battle.driver2.wins} {battle.driver2.wins === 1 ? 'win' : 'wins'}
+                      </span>
+                      <span className="ml-2">Championship: P{battle.driver2.position}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
