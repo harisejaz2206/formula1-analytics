@@ -7,6 +7,7 @@ import Profiles from './pages/Profiles';
 import TrackInsights from './pages/TrackInsights';
 import SeasonOverview from './pages/SeasonOverview';
 import F1Guide from './pages/F1Guide';
+import About from './pages/About';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
               <Route path="/tracks" element={<TrackInsights />} />
               <Route path="/season" element={<SeasonOverview />} />
               <Route path="/guide" element={<F1Guide />} />
+              <Route path="/about" element={<About />} />
             </Routes>
           </main>
         </div>

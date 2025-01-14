@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Home, Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen } from 'lucide-react';
+import { Home, Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen, Info } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,6 +22,12 @@ const Navbar: React.FC = () => {
     { path: '/tracks', label: 'Track Insights', icon: MapPin },
     { path: '/season', label: 'Season Overview', icon: TrendingUp },
     { path: '/guide', label: 'F1 Guide', icon: BookOpen },
+    {
+      path: '/about',
+      label: 'About',
+      icon: Info,
+      className: 'opacity-60 hover:opacity-100' // subtle styling
+    },
   ];
 
   return (
