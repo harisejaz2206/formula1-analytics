@@ -75,21 +75,21 @@ const Home: React.FC = () => {
                     <p className="text-xl text-f1-silver/80 mb-8 leading-relaxed">
                         Dive into the world of Formula 1 with real-time race tracking, comprehensive statistics, and in-depth analysis of every circuit and driver.
                     </p>
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-4 mb-6">
                         <NavLink
                             to="/live"
-                            className="inline-flex items-center px-6 py-3 bg-f1-red text-white rounded-lg hover:bg-f1-red/90 transition-colors duration-300"
+                            className="inline-flex items-center px-6 py-3 bg-f1-red text-white rounded-lg hover:bg-f1-red/90 transition-colors duration-300 w-full sm:w-auto"
                         >
-                            <Timer className="w-5 h-5 mr-2" />
-                            Live Race Tracker
-                            <ChevronRight className="w-5 h-5 ml-2" />
+                            <Timer className="w-5 h-5 mr-2 flex-shrink-0" />
+                            <span className="truncate">Live Race Tracker</span>
+                            <ChevronRight className="w-5 h-5 ml-2 flex-shrink-0" />
                         </NavLink>
                         <NavLink
                             to="/season"
-                            className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300"
+                            className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300 w-full sm:w-auto"
                         >
-                            <Trophy className="w-5 h-5 mr-2" />
-                            Season Overview
+                            <Trophy className="w-5 h-5 mr-2 flex-shrink-0" />
+                            <span className="truncate">Season Overview</span>
                         </NavLink>
                     </div>
                 </div>
