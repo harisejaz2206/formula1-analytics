@@ -11,108 +11,102 @@ import {
     HeartPulse,
     Wrench
 } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
+
+const DetailedGuide = {
+  racing: {
+    title: "Racing Rules & Procedures",
+    sections: [
+      {
+        subtitle: "Qualifying Format",
+        content: [
+          "Q1 (18 minutes): All 20 cars participate, bottom 5 eliminated",
+          "Q2 (15 minutes): 15 cars compete, bottom 5 eliminated",
+          "Q3 (12 minutes): Top 10 shootout for pole position",
+          "107% rule: Must be within 107% of Q1's fastest time",
+          "Parc fermé begins before qualifying - limited car changes allowed"
+        ]
+      },
+      {
+        subtitle: "Sprint Format",
+        content: [
+          "Sprint Shootout: Shorter qualifying (SQ1: 12min, SQ2: 10min, SQ3: 8min)",
+          "100km Sprint Race with no mandatory pit stops",
+          "Points awarded to top 8 (8-7-6-5-4-3-2-1)",
+          "Free tire choice and separate parc fermé rules",
+          "Results don't determine Sunday's grid position"
+        ]
+      },
+      {
+        subtitle: "Flag Rules",
+        content: [
+          "🔵 Blue Flag: Let faster car pass within 3 corners or face penalty",
+          "💛 Yellow Flag: Slow down, no overtaking, be prepared to stop",
+          "🔴 Red Flag: Session stopped, return to pits immediately",
+          "⚫️ Black Flag: Driver disqualified, must return to pits",
+          "🏁 Checkered Flag: Session/race ended",
+          "⚫️🟠 Black & Orange: Mechanical issue, must pit for repairs"
+        ]
+      }
+    ]
+  },
+  technical: {
+    title: "Technical Regulations",
+    sections: [
+      {
+        subtitle: "Power Unit Components",
+        content: [
+          "Internal Combustion Engine (ICE): 3 per season",
+          "Turbocharger (TC): 3 per season",
+          "Motor Generator Unit - Heat (MGU-H): 3 per season",
+          "Motor Generator Unit - Kinetic (MGU-K): 3 per season",
+          "Energy Store (ES): 2 per season",
+          "Control Electronics (CE): 2 per season",
+          "Exceeding allocations results in grid penalties"
+        ]
+      },
+      {
+        subtitle: "Aerodynamic Testing Restrictions",
+        content: [
+          "Wind tunnel time allocated based on championship position",
+          "1st place: 70% of baseline testing allowed",
+          "Last place: 115% of baseline testing allowed",
+          "CFD (Computational Fluid Dynamics) restrictions apply",
+          "Cost cap affects development capabilities"
+        ]
+      }
+    ]
+  },
+  strategy: {
+    title: "Race Strategy",
+    sections: [
+      {
+        subtitle: "Tire Management",
+        content: [
+          "C0 (Hardest) to C5 (Softest) compounds available",
+          "Must use at least two different compounds in dry race",
+          "Tire degradation affects pace and strategy",
+          "Graining: Surface rubber balls up reducing grip",
+          "Blistering: Subsurface heat damage to tires",
+          "Thermal degradation vs. mechanical wear"
+        ]
+      },
+      {
+        subtitle: "Pit Stop Strategy",
+        content: [
+          "Undercut: Pitting before competitor for fresh tire advantage",
+          "Overcut: Staying out longer while competitor pits",
+          "Track position vs. tire advantage trade-off",
+          "Safety Car often triggers opportunistic stops",
+          "Temperature management during formation laps",
+          "Fuel load affects early race pace"
+        ]
+      }
+    ]
+  }
+};
 
 const F1Guide: React.FC = () => {
-    const guideTopics = [
-        {
-            title: "Race Weekend Format",
-            icon: Calendar,
-            content: [
-                "Friday - FP1 (60min) & Qualifying for Sunday's Race",
-                "Saturday - Sprint Shootout & Sprint Race (100km)",
-                "Sunday - Main Race (305km or 2 hours)",
-                "Three practice sessions on non-sprint weekends",
-                "Q1, Q2, Q3 format with progressive elimination",
-                "Parc fermé conditions after qualifying"
-            ]
-        },
-        {
-            title: "Scoring System",
-            icon: Trophy,
-            content: [
-                "Race Points: 25-18-15-12-10-8-6-4-2-1",
-                "Sprint Points: 8-7-6-5-4-3-2-1",
-                "Fastest Lap: 1 point (if finishing in top 10)",
-                "Constructor points = sum of both drivers",
-                "Points halved if less than 75% race distance",
-                "All points lost if disqualified"
-            ]
-        },
-        {
-            title: "Car Components",
-            icon: Car,
-            content: [
-                "V6 1.6L Turbo Hybrid (1,000+ HP combined)",
-                "ERS: MGU-K (Kinetic) & MGU-H (Heat) recovery",
-                "DRS: Reduces drag by opening rear wing",
-                "18-inch Pirelli tires with 5 compounds",
-                "Limited components per season (PU, gearbox)",
-                "Minimum weight: 798kg with driver"
-            ]
-        },
-        {
-            title: "Race Rules",
-            icon: Flag,
-            content: [
-                "Blue Flags: Must let faster cars pass within 3 corners",
-                "Yellow Flags: Slow down, no overtaking",
-                "Red Flags: Race stopped, return to pit lane",
-                "Black & Orange: Must pit for repairs",
-                "5-second/10-second/Drive-through penalties",
-                "Track limits: 3 warnings then penalty"
-            ]
-        },
-        {
-            title: "Safety Procedures",
-            icon: AlertTriangle,
-            content: [
-                "Safety Car: Field bunches up, no overtaking",
-                "Virtual Safety Car (VSC): 40% slower pace",
-                "Red Flag: Race suspended, cars to pits",
-                "Formation Lap: Tire and brake warming",
-                "Medical Car follows first lap",
-                "Minimum delta time under yellow flags"
-            ]
-        },
-        {
-            title: "Technical Regulations",
-            icon: Wrench,
-            content: [
-                "Cost Cap: $135M per team (2024)",
-                "Wind tunnel time based on championship position",
-                "Strict fuel flow and composition rules",
-                "Mandatory crash tests and safety features",
-                "Specific aerodynamic testing restrictions",
-                "Parc fermé working window limitations"
-            ]
-        },
-        {
-            title: "Power Unit Details",
-            icon: Zap,
-            content: [
-                "1.6L V6 Turbo Hybrid Engine",
-                "Energy Store: 1.1kWh lithium-ion battery",
-                "15,000 RPM maximum limit",
-                "3 ICE, Turbo, MGU-H, MGU-K per season",
-                "2 Energy Store & Control Electronics",
-                "Fuel flow limit: 100kg/hour maximum"
-            ]
-        },
-        {
-            title: "Strategy Elements",
-            icon: Settings,
-            content: [
-                "Mandatory pit stop (two tire compounds)",
-                "Undercut: Early pit for track position",
-                "Overcut: Extended stint for track position",
-                "Tire management crucial for performance",
-                "Fuel load affects lap times significantly",
-                "Weather forecast impacts tire choice"
-            ]
-        }
-    ];
-
     const keyStats = [
         { label: "Top Speed", value: "350+ km/h", icon: Gauge, detail: "Monza straight" },
         { label: "Race Distance", value: "~305 km", icon: MapPin, detail: "or 2 hours max" },
@@ -152,25 +146,37 @@ const F1Guide: React.FC = () => {
                 ))}
             </div>
 
-            {/* Main Guide Content */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {guideTopics.map((topic) => (
-                    <div key={topic.title} className="f1-card p-6 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div className="flex items-center mb-4">
-                            <topic.icon className="w-6 h-6 text-f1-red mr-3" />
-                            <h2 className="text-xl font-bold text-white">{topic.title}</h2>
-                        </div>
-                        <ul className="space-y-2">
-                            {topic.content.map((item, index) => (
-                                <li key={index} className="flex items-start text-f1-silver">
-                                    <ChevronRight className="w-4 h-4 text-f1-red mr-2 mt-1 flex-shrink-0" />
-                                    <span>{item}</span>
-                                </li>
+            {/* Detailed Guide Tabs */}
+            <div className="f1-card p-6">
+                <Tabs defaultValue="racing" className="w-full">
+                    <TabsList className="grid grid-cols-3 mb-6">
+                        <TabsTrigger value="racing">Racing Rules</TabsTrigger>
+                        <TabsTrigger value="technical">Technical</TabsTrigger>
+                        <TabsTrigger value="strategy">Strategy</TabsTrigger>
+                    </TabsList>
+
+                    {Object.entries(DetailedGuide).map(([key, section]) => (
+                        <TabsContent key={key} value={key} className="space-y-6">
+                            <h2 className="text-2xl font-bold text-white mb-4">{section.title}</h2>
+                            {section.sections.map((subsection, idx) => (
+                                <div key={idx} className="bg-f1-gray/20 rounded-lg p-6 space-y-4">
+                                    <h3 className="text-xl font-bold text-f1-red flex items-center gap-2">
+                                        <ChevronRight className="w-5 h-5" />
+                                        {subsection.subtitle}
+                                    </h3>
+                                    <ul className="space-y-3">
+                                        {subsection.content.map((item, i) => (
+                                            <li key={i} className="text-f1-silver flex items-start gap-3">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-f1-red mt-2 flex-shrink-0" />
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             ))}
-                        </ul>
-                    </div>
-                ))}
+                        </TabsContent>
+                    ))}
+                </Tabs>
             </div>
 
             {/* Call to Action */}

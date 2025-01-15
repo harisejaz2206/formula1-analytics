@@ -1,11 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     Flag, Timer, Users, MapPin, TrendingUp, ChevronRight,
-    Trophy, Gauge, Car, Calendar, Star, Activity
+    Trophy, Gauge, Car, Calendar, Star, Activity, BookOpen, Sparkles
 } from 'lucide-react';
 
+const telemetryMessages = [
+    "ANALYZING_RACE_STRATEGY...",
+    "CALCULATING_OPTIMAL_PITSTOP...",
+    "MONITORING_TIRE_DEGRADATION...",
+    "CHECKING_ERS_DEPLOYMENT...",
+    "MEASURING_DOWNFORCE_LEVELS...",
+    "ANALYZING_SECTOR_TIMES...",
+    "CALCULATING_FUEL_DELTA...",
+    "MONITORING_BRAKE_TEMPS...",
+    "DRS_DETECTION_ACTIVE...",
+    "SCANNING_TRACK_CONDITIONS..."
+];
+
+const statusMessages = [
+    "DRS_ENABLED: TRUE",
+    "TIRE_COMPOUND: SOFT",
+    "ERS_MODE: OVERTAKE",
+    "FUEL_MODE: RICH",
+    "MGU-K: HARVESTING",
+    "BATTERY_SOC: 98%",
+    "GRIP_LEVEL: OPTIMAL",
+    "TRACK_STATUS: GREEN",
+    "DELTA_TIME: -0.245s",
+    "SLIPSTREAM: DETECTED"
+];
+
 const Home: React.FC = () => {
+    const [messageIndex, setMessageIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setMessageIndex((prev) => (prev + 1) % telemetryMessages.length);
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, []);
+
     const features = [
         {
             icon: Timer,
@@ -113,6 +149,93 @@ const Home: React.FC = () => {
                     </NavLink>
                 ))}
             </div>
+
+            {/* Add this after the Quick Links Section and before the Features Grid */}
+            <section className="f1-card p-8 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                            <BookOpen className="w-8 h-8 text-f1-red" />
+                            New to Formula 1?
+                        </h2>
+                        <p className="text-f1-silver/80 text-lg leading-relaxed">
+                            Dive into our comprehensive F1 guide. From race formats to technical regulations, 
+                            we've got everything you need to understand the pinnacle of motorsport.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3 text-f1-silver">
+                                <Flag className="w-5 h-5 text-f1-red" />
+                                <span>Race Formats</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-f1-silver">
+                                <Trophy className="w-5 h-5 text-f1-red" />
+                                <span>Scoring System</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-f1-silver">
+                                <Gauge className="w-5 h-5 text-f1-red" />
+                                <span>Technical Rules</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-f1-silver">
+                                <Sparkles className="w-5 h-5 text-f1-red" />
+                                <span>Strategy Guide</span>
+                            </div>
+                        </div>
+                        <NavLink
+                            to="/guide"
+                            // onClick={() => console.log('Guide button clicked')}
+                            className="inline-flex items-center px-6 py-3 bg-f1-red text-white rounded-lg 
+                                      hover:bg-f1-red/90 transition-all duration-300 group/button relative z-30"
+                        >
+                            <BookOpen className="w-5 h-5 mr-2" />
+                            <span>Explore F1 Guide</span>
+                            <ChevronRight className="w-5 h-5 ml-2 group-hover/button:translate-x-1 transition-transform duration-300" />
+                        </NavLink>
+                    </div>
+                    
+                    <div className="relative hidden lg:block">
+                        <div className="absolute inset-0 bg-gradient-to-r from-f1-black/80 to-transparent z-10"></div>
+                        <div className="h-full w-full bg-f1-black rounded-lg overflow-hidden">
+                            {/* Tech Overlay Elements */}
+                            <div className="absolute inset-0 z-20 p-8 flex flex-col justify-between">
+                                <div className="flex justify-end">
+                                    <div className="text-f1-red/60 font-mono text-sm animate-pulse">
+                                        F1_TELEMETRY_SYSTEM_V23
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-end">
+                                    <div className="text-f1-red/60 font-mono text-sm">
+                                        <div className="animate-typewriter">
+                                            {telemetryMessages[messageIndex]}
+                                        </div>
+                                    </div>
+                                    <div className="text-f1-red/60 font-mono text-sm">
+                                        {statusMessages[messageIndex]}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Enhanced Grid Animation */}
+                            <div className="grid-animation">
+                                {[...Array(150)].map((_, i) => (
+                                    <div 
+                                        key={i} 
+                                        className="grid-item"
+                                        style={{
+                                            animationDelay: `${Math.random() * 3}s`,
+                                            left: `${Math.random() * 100}%`,
+                                            top: `${Math.random() * 100}%`,
+                                            width: `${Math.random() * 6 + 2}px`,
+                                            height: `${Math.random() * 6 + 2}px`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             {/* Features Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
