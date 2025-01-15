@@ -363,28 +363,81 @@ const RaceTracker: React.FC = () => {
                   domain={['dataMin - 1', 'dataMax + 1']}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#15151E',
-                    border: '1px solid #333',
-                    borderRadius: '8px'
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-f1-black/95 backdrop-blur-md border border-f1-gray/30 rounded-lg p-4 shadow-xl">
+                          <div className="border-b border-f1-gray/30 pb-2 mb-3">
+                            <span className="text-f1-silver/80 text-sm">Lap </span>
+                            <span className="text-white font-bold">{label}</span>
+                          </div>
+                          <div className="space-y-2">
+                            {payload.map((entry: any, index: number) => (
+                              <div key={`lap-${index}`} className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-2 h-2 rounded-full" 
+                                    style={{ backgroundColor: entry.color }}
+                                  />
+                                  <span className="text-f1-silver whitespace-nowrap">
+                                    {entry.name}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-white font-mono font-bold">
+                                    {Number(entry.value).toFixed(3)}
+                                  </span>
+                                  <span className="text-f1-silver/60 text-sm">s</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Gap to Leader */}
+                          {payload.length > 1 && (
+                            <div className="mt-3 pt-3 border-t border-f1-gray/30">
+                              <div className="text-f1-silver/80 text-sm mb-2">Gap to Leader</div>
+                              {payload.slice(1).map((entry: any, index: number) => {
+                                const gap = (entry.value - payload[0].value).toFixed(3);
+                                return (
+                                  <div key={`gap-${index}`} className="flex items-center justify-between text-sm">
+                                    <span className="text-f1-silver/60">{entry.name}</span>
+                                    <span className={`font-mono ${Number(gap) > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                      {Number(gap) > 0 ? '+' : ''}{gap}s
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
-                  formatter={(value: any) => [`${value.toFixed(3)}s`]}
-                  labelStyle={{ color: '#F0F0F0' }}
                 />
                 <Legend
                   verticalAlign="top"
                   height={36}
-                  wrapperStyle={{
-                    paddingBottom: '20px',
-                    color: '#F0F0F0'
-                  }}
+                  content={({ payload }) => (
+                    <div className="flex flex-wrap justify-center gap-4 mb-4">
+                      {payload?.map((entry: any, index: number) => (
+                        <div key={`legend-${index}`} className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <span className="text-f1-silver text-sm">{entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 />
                 {raceData?.Results.slice(0, 5).map((result: any, index: number) => (
                   <Line
                     key={result.Driver.driverId}
                     type="monotone"
                     dataKey={`${result.Driver.givenName} ${result.Driver.familyName}`}
-                    name={`${result.Driver.familyName}`} // Simplified legend name
+                    name={`${result.Driver.familyName}`}
                     stroke={`hsl(${index * 60}, 70%, 50%)`}
                     strokeWidth={2}
                     dot={false}
