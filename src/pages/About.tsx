@@ -47,7 +47,7 @@ const About: React.FC = () => {
         {
             icon: Linkedin,
             label: 'LinkedIn',
-            href: '#',
+            href: 'https://www.linkedin.com/in/harisejaz22/',
             color: 'hover:text-blue-500'
         },
         {
