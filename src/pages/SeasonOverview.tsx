@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDriverStandings, getConstructorStandings, getSeasons, getSeasonResults } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import SeasonSelector from '../components/SeasonSelector';
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { Trophy, Building2, Flag, Target, Calendar, ChevronDown, TrendingUp } from 'lucide-react';
 
@@ -10,7 +10,7 @@ const SeasonOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [seasons, setSeasons] = useState<string[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState('2024');
+  const [selectedSeason, setSelectedSeason] = useState(new Date().getFullYear().toString());
   const [driverStandings, setDriverStandings] = useState<any[]>([]);
   const [constructorStandings, setConstructorStandings] = useState<any[]>([]);
   const [seasonResults, setSeasonResults] = useState<any[]>([]);
@@ -22,22 +22,39 @@ const SeasonOverview: React.FC = () => {
         const seasonsData = await getSeasons();
         const seasonYears = seasonsData.map((season: any) => season.season);
         setSeasons(seasonYears);
+        
+        // Ensure the current year is selected if it exists in the available seasons
+        const currentYear = new Date().getFullYear().toString();
+        if (seasonYears.includes(currentYear) && selectedSeason !== currentYear) {
+          setSelectedSeason(currentYear);
+        }
       } catch (err) {
         setError('Failed to load seasons');
       }
     };
     fetchSeasons();
-  }, []);
+  }, [selectedSeason]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
       try {
         const [drivers, constructors, results] = await Promise.all([
           getDriverStandings(selectedSeason),
           getConstructorStandings(selectedSeason),
           getSeasonResults(selectedSeason)
         ]);
+
+        if (!drivers || drivers.length === 0) {
+          setError('No driver standings data available for this season');
+          return;
+        }
+
+        if (!constructors || constructors.length === 0) {
+          setError('No constructor standings data available for this season');
+          return;
+        }
 
         console.log('Raw results:', results);
 
@@ -85,8 +102,8 @@ const SeasonOverview: React.FC = () => {
         setSeasonResults(results);
         setCumulativePoints(cumulativeData);
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load season data');
+        console.error('Error fetching season data:', err);
+        setError('Failed to load season data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -122,7 +139,7 @@ const SeasonOverview: React.FC = () => {
       {/* Page Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
         <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-white mb-2">2024 Season Overview</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">{selectedSeason} Season Overview</h1>
           <p className="text-f1-silver/80 text-lg">Championship Standings and Statistics</p>
         </div>
         <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
@@ -144,16 +161,17 @@ const SeasonOverview: React.FC = () => {
             className="f1-card px-4 py-2 pr-8 text-white bg-f1-gray/20 rounded-lg cursor-pointer 
               hover:bg-f1-gray/30 transition-colors duration-200 appearance-none border border-f1-gray/10"
           >
-            <option value="2024">2024 (Current)</option>
-            <option value="2023">2023</option>
             {seasons
-              .filter(season => season !== '2024' && season !== '2023')
               .sort((a, b) => parseInt(b) - parseInt(a))
-              .map((season) => (
-                <option key={season} value={season}>
-                  {season}
-                </option>
-              ))}
+              .map((season) => {
+                const currentYear = new Date().getFullYear().toString();
+                const isCurrentSeason = season === currentYear;
+                return (
+                  <option key={season} value={season}>
+                    {isCurrentSeason ? `${season} (Current)` : season}
+                  </option>
+                );
+              })}
           </select>
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
             <ChevronDown className="w-4 h-4 text-f1-red" />
@@ -430,7 +448,7 @@ const SeasonOverview: React.FC = () => {
                   name="Avg Points per Points Finish"
                   radius={[4, 4, 0, 0]}
                 >
-                  {driverStandings.slice(0, 10).map((entry, index) => (
+                  {driverStandings.slice(0, 10).map((_entry, index) => (
                     <Cell
                       key={index}
                       fill={[
@@ -475,7 +493,7 @@ const SeasonOverview: React.FC = () => {
                   cy="50%"
                   outerRadius={140}
                   labelLine={false}
-                  label={({ name, percentage, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                  label={({ name, percentage, cx, cy, midAngle, outerRadius }) => {
                     if (parseFloat(percentage) < 5) return null;
 
                     const RADIAN = Math.PI / 180;
@@ -498,7 +516,7 @@ const SeasonOverview: React.FC = () => {
                     );
                   }}
                 >
-                  {constructorStandings.map((entry, index) => (
+                  {constructorStandings.map((_entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={[
@@ -596,7 +614,7 @@ const SeasonOverview: React.FC = () => {
                 outerRadius={140}
                 innerRadius={80}
                 labelLine={false}
-                label={({ name, percentage, wins, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                label={({ name, percentage, wins, cx, cy, midAngle, outerRadius }) => {
                   if (parseFloat(percentage) < 5) return null;
 
                   const RADIAN = Math.PI / 180;
@@ -632,7 +650,7 @@ const SeasonOverview: React.FC = () => {
                   );
                 }}
               >
-                {constructorStandings.map((entry, index) => (
+                {constructorStandings.map((_entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={[
