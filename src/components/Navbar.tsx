@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Home, Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen, Info } from 'lucide-react';
+import { NavLink, Link } from 'react-router-dom';
+import { Home, Flag, Menu, X, Timer, Users, MapPin, TrendingUp, BookOpen, Info, CheckCircle } from 'lucide-react';
+import { config } from '../config/env';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,6 +75,14 @@ const Navbar: React.FC = () => {
                   <span>{label}</span>
                 </NavLink>
               ))}
+              
+              {/* Data Source Badge */}
+              {config.f1.showDataSourceBadge && (
+                <div className="flex items-center space-x-1 px-3 py-1 bg-green-600/20 text-green-400 rounded-full text-xs font-medium">
+                  <CheckCircle className="w-3 h-3" />
+                  <span>Jolpica ✅</span>
+                </div>
+              )}
             </div>
 
             {/* Mobile menu button */}
