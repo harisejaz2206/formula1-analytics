@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { getRaceResults, getLapTimes, getSeasons, getRounds, getPitStops } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
 import SeasonSelector from '../components/SeasonSelector';
 import RoundSelector from '../components/RoundSelector';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, ZAxis
+  ResponsiveContainer
 } from 'recharts';
 import { Trophy, Flag, Clock, MapPin, Timer } from 'lucide-react';
 
@@ -15,11 +14,11 @@ const RaceTracker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [rounds, setRounds] = useState<any[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState('2024');
+  const [selectedSeason, setSelectedSeason] = useState(new Date().getFullYear().toString());
   const [selectedRound, setSelectedRound] = useState('1');
   const [raceData, setRaceData] = useState<any>(null);
   const [lapTimes, setLapTimes] = useState<any[]>([]);
-  const [qualifyingTimes, setQualifyingTimes] = useState<any[]>([]);
+
   const [pitStops, setPitStops] = useState<any[]>([]);
   const [positionChanges, setPositionChanges] = useState<any[]>([]);
   const [qualifyingComparison, setQualifyingComparison] = useState<any[]>([]);
@@ -43,7 +42,30 @@ const RaceTracker: React.FC = () => {
         const roundsData = await getRounds(selectedSeason);
         setRounds(roundsData);
         if (roundsData.length > 0) {
-          setSelectedRound(roundsData[0].round);
+          // For current season, find the most recent completed race or upcoming race
+          const currentDate = new Date();
+          let bestRound = roundsData[0];
+          
+          if (selectedSeason === currentDate.getFullYear().toString()) {
+            // Find the most recent race (completed) or next upcoming race
+            const completedRaces = roundsData.filter((race: any) => {
+              const raceDate = new Date(race.date);
+              return raceDate <= currentDate;
+            });
+            
+            if (completedRaces.length > 0) {
+              // Use the most recent completed race
+              bestRound = completedRaces[completedRaces.length - 1];
+            } else {
+              // All races are in the future, use the first upcoming one
+              bestRound = roundsData[0];
+            }
+          } else {
+            // For past seasons, start with the last race of the season
+            bestRound = roundsData[roundsData.length - 1];
+          }
+          
+          setSelectedRound(bestRound.round);
         }
       } catch (err) {
         setError('Failed to load rounds');
@@ -55,24 +77,28 @@ const RaceTracker: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
+      
+      // Reset all data when switching races
+      setRaceData(null);
+      setLapTimes([]);
+      setPitStops([]);
+      setPositionChanges([]);
+      setQualifyingComparison([]);
+      
       try {
-        const [race, laps] = await Promise.all([
-          getRaceResults(selectedSeason, selectedRound),
-          getLapTimes(selectedSeason, selectedRound)
-        ]);
+        // First, get the race information
+        const race = await getRaceResults(selectedSeason, selectedRound);
+        
+        if (!race || !race.Results || race.Results.length === 0) {
+          // Race hasn't happened yet or no data available
+          setError('This race has not taken place yet or no data is available.');
+          return;
+        }
+        
         setRaceData(race);
-
-        // Transform lap times data for the chart
-        const transformedLapTimes = laps.map((lap: any) => ({
-          lap: lap.number,
-          ...lap.Timings.reduce((acc: any, timing: any) => {
-            acc[timing.driverId] = timing.time;
-            return acc;
-          }, {})
-        }));
-        setLapTimes(transformedLapTimes);
       } catch (err) {
-        setError('Failed to load race data');
+        setError('Failed to load race data. This race may not have happened yet.');
       } finally {
         setLoading(false);
       }
@@ -84,64 +110,81 @@ const RaceTracker: React.FC = () => {
   }, [selectedSeason, selectedRound]);
 
   useEffect(() => {
-    const fetchLapTimes = async () => {
-      if (!raceData) return;
+    const fetchDetailedData = async () => {
+      if (!raceData || !raceData.Results || raceData.Results.length === 0) return;
 
       try {
-        const top5Drivers = raceData.Results.slice(0, 5);
-        const allLapTimes = await Promise.all(
-          top5Drivers.map(async (result) => {
-            const laps = await getLapTimes(selectedSeason, selectedRound, result.Driver.driverId);
-            return {
-              driver: `${result.Driver.givenName} ${result.Driver.familyName}`,
-              laps: laps.map((lap: any) => ({
-                lapNumber: parseInt(lap.number),
-                time: lap.Timings[0]?.time || null
-              }))
-            };
-          })
+        // Check if this is a completed race (has actual results, not just a scheduled race)
+        const hasValidResults = raceData.Results.some((result: any) => 
+          result.position && result.status && (result.Time || result.status !== 'Not Available')
         );
 
-        // Transform data for the chart
-        const chartData = allLapTimes[0].laps.map((lap: any, index: number) => {
-          const lapData: any = { lap: lap.lapNumber };
-          allLapTimes.forEach((driver) => {
-            if (driver.laps[index]?.time) {
-              lapData[driver.driver] = convertLapTimeToSeconds(driver.laps[index].time);
-            }
+        if (!hasValidResults) {
+          console.log('Race data exists but race appears to be scheduled/not completed yet');
+          return;
+        }
+
+        // Only fetch detailed data for completed races
+        const [lapTimesData, pitStopsData] = await Promise.all([
+          // Fetch lap times for top 5 drivers
+          Promise.all(
+            raceData.Results.slice(0, 5).map(async (result: any) => {
+              try {
+                const laps = await getLapTimes(selectedSeason, selectedRound, result.Driver.driverId);
+                return {
+                  driver: `${result.Driver.givenName} ${result.Driver.familyName}`,
+                  laps: laps.map((lap: any) => ({
+                    lapNumber: parseInt(lap.number),
+                    time: lap.Timings[0]?.time || null
+                  }))
+                };
+              } catch (error) {
+                console.warn(`Failed to fetch lap times for ${result.Driver.familyName}:`, error);
+                return null;
+              }
+            })
+          ).then(results => results.filter(Boolean)), // Filter out failed requests
+          
+          // Fetch pit stops data
+          getPitStops(selectedSeason, selectedRound).catch(error => {
+            console.warn('Failed to fetch pit stops:', error);
+            return [];
+          })
+        ]);
+
+        // Transform lap times data for chart
+        if (lapTimesData.length > 0 && lapTimesData[0]?.laps.length > 0) {
+          const chartData = lapTimesData[0].laps.map((lap: any, index: number) => {
+            const lapData: any = { lap: lap.lapNumber };
+            lapTimesData.forEach((driver: any) => {
+              if (driver?.laps[index]?.time) {
+                lapData[driver.driver] = convertLapTimeToSeconds(driver.laps[index].time);
+              }
+            });
+            return lapData;
           });
-          return lapData;
-        });
+          setLapTimes(chartData);
+        }
 
-        setLapTimes(chartData);
+        // Transform pit stops data
+        if (pitStopsData.length > 0) {
+          const transformedPitStops = pitStopsData.map((stop: any) => ({
+            driverName: raceData.Results.find((r: any) => r.Driver.driverId === stop.driverId)
+              ?.Driver.familyName || stop.driverId,
+            stop: parseInt(stop.stop),
+            lap: parseInt(stop.lap),
+            duration: parseFloat(stop.duration),
+            cumulativeTime: convertDurationToSeconds(stop.duration)
+          }));
+          setPitStops(transformedPitStops);
+        }
+
       } catch (error) {
-        console.error('Error fetching lap times:', error);
+        console.error('Error fetching detailed race data:', error);
       }
     };
 
-    // Fetch pit stops data
-    const fetchPitStops = async () => {
-      if (!raceData) return;
-
-      try {
-        const pitStopsData = await getPitStops(selectedSeason, selectedRound);
-        const transformedPitStops = pitStopsData.map((stop: any) => ({
-          driverName: raceData.Results.find((r: any) => r.Driver.driverId === stop.driverId)
-            ?.Driver.familyName || stop.driverId,
-          stop: parseInt(stop.stop),
-          lap: parseInt(stop.lap),
-          duration: parseFloat(stop.duration),
-          cumulativeTime: convertDurationToSeconds(stop.duration)
-        }));
-
-        setPitStops(transformedPitStops);
-      } catch (error) {
-        console.error('Error fetching pit stops:', error);
-      }
-    };
-
-    fetchLapTimes();
-    fetchPitStops();
+    fetchDetailedData();
   }, [raceData, selectedSeason, selectedRound]);
 
   useEffect(() => {
@@ -200,17 +243,7 @@ const RaceTracker: React.FC = () => {
     return parseFloat(duration);
   };
 
-  // Simplified pit stop data transformation
-  const transformPitStops = (data: any[]) => {
-    return data.map((stop: any) => ({
-      driverName: raceData?.Results.find(
-        (r: any) => r.Driver.driverId === stop.driverId
-      )?.Driver.familyName || stop.driverId,
-      lap: parseInt(stop.lap),
-      duration: parseFloat(stop.duration),
-      stop: parseInt(stop.stop)
-    }));
-  };
+
 
   // Group pit stops by driver for the summary
   const getPitStopSummary = (data: any[]) => {
@@ -235,7 +268,82 @@ const RaceTracker: React.FC = () => {
   };
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} />;
+  if (error) {
+    return (
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
+          <div className="relative z-10">
+            <h1 className="text-4xl font-bold text-white mb-2">Race Tracker</h1>
+            <p className="text-f1-silver/80 text-lg">Live Race Results and Analysis</p>
+          </div>
+          <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
+            <Flag className="w-full h-full" />
+          </div>
+        </div>
+
+        {/* Selectors Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="f1-card p-6 backdrop-blur-sm">
+            <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider">Season</label>
+            <SeasonSelector
+              seasons={seasons}
+              selectedSeason={selectedSeason}
+              onSeasonChange={setSelectedSeason}
+            />
+          </div>
+          <div className="f1-card p-6 backdrop-blur-sm">
+            <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider">Round</label>
+            <RoundSelector
+              rounds={rounds}
+              selectedRound={selectedRound}
+              onRoundChange={setSelectedRound}
+            />
+          </div>
+        </div>
+
+        {/* Error Message with Race Info */}
+        <div className="f1-card p-8 text-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-16 h-16 bg-f1-red/10 rounded-full flex items-center justify-center">
+              <Clock className="w-8 h-8 text-f1-red" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white mb-2">Race Not Available</h3>
+              <p className="text-f1-silver/80 max-w-md mx-auto">
+                {error}
+              </p>
+              {/* Show race info if we have rounds data */}
+              {rounds.length > 0 && selectedRound && (
+                <div className="mt-4 p-4 bg-f1-gray/20 rounded-lg">
+                  {(() => {
+                    const race = rounds.find((r: any) => r.round === selectedRound);
+                    if (race) {
+                      return (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-center space-x-2">
+                            <MapPin className="w-4 h-4 text-f1-red" />
+                            <span className="text-white font-medium">{race.raceName}</span>
+                          </div>
+                          <div className="text-f1-silver/60">
+                            {race.Circuit?.circuitName}
+                          </div>
+                          <div className="text-f1-silver/60">
+                            Scheduled: {race.date} {race.time && `at ${race.time}`}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -397,7 +505,7 @@ const RaceTracker: React.FC = () => {
                             <div className="mt-3 pt-3 border-t border-f1-gray/30">
                               <div className="text-f1-silver/80 text-sm mb-2">Gap to Leader</div>
                               {payload.slice(1).map((entry: any, index: number) => {
-                                const gap = (entry.value - payload[0].value).toFixed(3);
+                                const gap = (Number(entry.value) - Number(payload[0]?.value || 0)).toFixed(3);
                                 return (
                                   <div key={`gap-${index}`} className="flex items-center justify-between text-sm">
                                     <span className="text-f1-silver/60">{entry.name}</span>
@@ -517,7 +625,7 @@ const RaceTracker: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-f1-silver">
                     <span>Position Change:</span>
-                    {driver.positionChange !== "N/A" ? (
+                    {driver.positionChange !== "N/A" && typeof driver.positionChange === 'number' ? (
                       <span className={`font-medium ${driver.positionChange > 0
                         ? 'text-green-400'
                         : driver.positionChange < 0
@@ -564,7 +672,7 @@ const RaceTracker: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {qualifyingComparison.map((driver, index) => (
+                {qualifyingComparison.map((driver) => (
                   <tr
                     key={driver.driverName}
                     className="hover:bg-f1-gray/30 transition-colors duration-200"

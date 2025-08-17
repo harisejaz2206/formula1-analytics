@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDriverStandings, getConstructorStandings, getSeasons } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import { Users, Building2, Trophy, Flag, Medal, Target, Calendar, ChevronDown } from 'lucide-react';
+import { Users, Building2, Trophy, Flag, Target, Calendar, ChevronDown } from 'lucide-react';
 
 const Profiles: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -10,7 +10,7 @@ const Profiles: React.FC = () => {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [constructors, setConstructors] = useState<any[]>([]);
   const [teamBattles, setTeamBattles] = useState<any[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState<string>("current");
+  const [selectedSeason, setSelectedSeason] = useState<string>(new Date().getFullYear().toString());
   const [availableSeasons, setAvailableSeasons] = useState<string[]>([]);
 
   const calculateTeamBattles = (driversData: any[]) => {
@@ -30,10 +30,11 @@ const Profiles: React.FC = () => {
     }, {});
 
     // Create team battle comparisons with total points
-    const battles = Object.entries(constructorGroups).map(([constructor, drivers]: [string, any[]]) => {
+    const battles = Object.entries(constructorGroups).map(([constructor, drivers]) => {
+      const typedDrivers = drivers as any[];
       // If there's only one driver, create a comparison with "TBA"
-      if (drivers.length === 1) {
-        drivers.push({
+      if (typedDrivers.length === 1) {
+        typedDrivers.push({
           name: "TBA",
           points: 0,
           wins: 0,
@@ -41,13 +42,13 @@ const Profiles: React.FC = () => {
         });
       }
 
-      const pointsTotal = drivers[0].points + drivers[1].points;
-      const driver1Percentage = pointsTotal === 0 ? 50 : (drivers[0].points / pointsTotal) * 100;
+      const pointsTotal = typedDrivers[0].points + typedDrivers[1].points;
+      const driver1Percentage = pointsTotal === 0 ? 50 : (typedDrivers[0].points / pointsTotal) * 100;
 
       return {
         constructor,
-        driver1: drivers[0],
-        driver2: drivers[1],
+        driver1: typedDrivers[0],
+        driver2: typedDrivers[1],
         pointsPercentage: driver1Percentage,
         totalPoints: pointsTotal // Add total points
       };
@@ -66,27 +67,46 @@ const Profiles: React.FC = () => {
           .map(season => season.season)
           .sort((a, b) => parseInt(b) - parseInt(a));
         setAvailableSeasons(sortedSeasons);
+        
+        // Ensure the current year is selected if it exists in the available seasons
+        const currentYear = new Date().getFullYear().toString();
+        if (sortedSeasons.includes(currentYear) && selectedSeason !== currentYear) {
+          setSelectedSeason(currentYear);
+        }
       } catch (err) {
         console.error('Failed to load seasons:', err);
       }
     };
 
     fetchSeasons();
-  }, []);
+  }, [selectedSeason]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
       try {
         const [driversData, constructorsData] = await Promise.all([
           getDriverStandings(selectedSeason),
           getConstructorStandings(selectedSeason)
         ]);
+        
+        if (!driversData || driversData.length === 0) {
+          setError('No driver standings data available for this season');
+          return;
+        }
+        
+        if (!constructorsData || constructorsData.length === 0) {
+          setError('No constructor standings data available for this season');
+          return;
+        }
+        
         setDrivers(driversData);
         setConstructors(constructorsData);
         setTeamBattles(calculateTeamBattles(driversData));
       } catch (err) {
-        setError('Failed to load profile data');
+        console.error('Error loading profile data:', err);
+        setError('Failed to load profile data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -124,12 +144,15 @@ const Profiles: React.FC = () => {
             className="f1-card px-4 py-2 pr-8 text-white bg-f1-gray/20 rounded-lg cursor-pointer 
               hover:bg-f1-gray/30 transition-colors duration-200 appearance-none border border-f1-gray/10"
           >
-            <option value="current">2024 (Current)</option>
-            {availableSeasons.map((season) => (
-              <option key={season} value={season}>
-                {season}
-              </option>
-            ))}
+            {availableSeasons.map((season) => {
+              const currentYear = new Date().getFullYear().toString();
+              const isCurrentSeason = season === currentYear;
+              return (
+                <option key={season} value={season}>
+                  {isCurrentSeason ? `${season} (Current)` : season}
+                </option>
+              );
+            })}
           </select>
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
             <ChevronDown className="w-4 h-4 text-f1-red" />
@@ -146,7 +169,7 @@ const Profiles: React.FC = () => {
           <div>
             <p className="text-f1-silver/70 text-sm">Champion's Points</p>
             <p className="text-2xl font-bold text-white">{drivers[0]?.points || 0}</p>
-            <p className="text-xs text-f1-silver/50">{drivers[0]?.Driver.givenName} {drivers[0]?.Driver.familyName}</p>
+            <p className="text-xs text-f1-silver/50">{drivers[0]?.Driver?.givenName} {drivers[0]?.Driver?.familyName}</p>
           </div>
         </div>
         <div className="f1-card p-6 flex items-center space-x-4 group hover:scale-105 transition-transform duration-300">
@@ -184,7 +207,8 @@ const Profiles: React.FC = () => {
             <h3 className="text-lg font-bold text-white mb-3">Points Distribution</h3>
             <div className="space-y-2">
               {drivers.slice(0, 5).map(driver => {
-                const percentage = (parseInt(driver.points) / parseInt(drivers[0].points)) * 100;
+                const leaderPoints = parseInt(drivers[0]?.points || '0');
+                const percentage = leaderPoints > 0 ? (parseInt(driver.points) / leaderPoints) * 100 : 0;
                 return (
                   <div key={driver.Driver.driverId} className="space-y-1">
                     <div className="flex justify-between text-sm text-f1-silver">
@@ -208,7 +232,9 @@ const Profiles: React.FC = () => {
             <h3 className="text-lg font-bold text-white mb-3">Points to Leader</h3>
             <div className="space-y-2">
               {drivers.slice(1, 6).map(driver => {
-                const gap = parseInt(drivers[0].points) - parseInt(driver.points);
+                const leaderPoints = parseInt(drivers[0]?.points || '0');
+                const driverPoints = parseInt(driver.points);
+                const gap = leaderPoints - driverPoints;
                 return (
                   <div key={driver.Driver.driverId} className="flex justify-between items-center text-sm">
                     <span className="text-f1-silver">{driver.Driver.familyName}</span>
@@ -411,7 +437,7 @@ const Profiles: React.FC = () => {
                     />
                     <div
                       className="absolute right-0 top-0 h-full bg-gradient-to-r from-f1-gray to-f1-gray/60 transition-all duration-500 rounded-r-full"
-                      style={{ width: `${battle.driver2Percentage}%` }}
+                      style={{ width: `${100 - battle.pointsPercentage}%` }}
                     />
                   </div>
 
