@@ -38,7 +38,7 @@ export const TabsList: React.FC<TabsListProps> = ({
   onTabChange 
 }) => {
   return (
-    <div className={`flex space-x-2 ${className}`}>
+    <div className={`f1-tabs-list ${className || ''}`}>
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child, { 
@@ -69,11 +69,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-lg transition-all duration-200 
-                 ${isActive 
-                   ? 'bg-f1-red text-white shadow-lg' 
-                   : 'text-f1-silver hover:bg-f1-gray/30'} 
-                 ${className}`}
+      className={`f1-tab-trigger ${isActive ? 'f1-tab-trigger-active' : 'f1-tab-trigger-idle'} ${className || ''}`}
     >
       {children}
     </button>
@@ -96,8 +92,8 @@ export const TabsContent: React.FC<TabsContentProps> = ({
   if (value !== activeTab) return null;
   
   return (
-    <div className={`transition-all duration-200 ${className}`}>
+    <div className={`animate-fade-in-up ${className || ''}`}>
       {children}
     </div>
   );
-}; 
+};

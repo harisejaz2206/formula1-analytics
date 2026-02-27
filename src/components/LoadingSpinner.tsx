@@ -1,9 +1,16 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
-const LoadingSpinner: React.FC = () => (
-  <div className="flex items-center justify-center w-full h-64">
-    <Loader2 className="w-12 h-12 animate-spin text-red-600" />
+interface LoadingSpinnerProps {
+  label?: string;
+}
+
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ label = 'Syncing race telemetry...' }) => (
+  <div className="f1-loading-state">
+    <div className="f1-loading-ring">
+      <Loader2 className="h-8 w-8 animate-spin text-f1-red" />
+    </div>
+    <p className="f1-loading-label">{label}</p>
   </div>
 );
 

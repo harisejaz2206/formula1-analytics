@@ -1,17 +1,16 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    BookOpen, Flag, Timer, Users, MapPin,
-    Settings, Award, Car, Gauge, Clock,
-    ChevronRight, Trophy, Calendar,
-    AlertTriangle,
+    BookOpen, Timer, MapPin,
+    Settings, Gauge,
+    ChevronRight, Trophy,
     Zap,
     Radio,
     Scale,
-    HeartPulse,
-    Wrench
+    HeartPulse
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
+import PageHeader from '../components/layout/PageHeader';
 
 const DetailedGuide = {
   racing: {
@@ -120,24 +119,19 @@ const F1Guide: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
-                <div className="relative z-10">
-                    <h1 className="text-4xl font-bold text-white mb-2">Formula 1 Guide</h1>
-                    <p className="text-f1-silver/80 text-lg">Your comprehensive guide to understanding F1</p>
-                    <p className="text-f1-silver/60 text-sm mt-2">Updated for 2024 Season Regulations</p>
-                </div>
-                <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
-                    <BookOpen className="w-full h-full" />
-                </div>
-            </div>
+            <PageHeader
+                icon={BookOpen}
+                overline="RULES + STRATEGY + TECHNICAL BASICS"
+                title="Formula 1 Guide"
+                subtitle="Your comprehensive guide to race formats, regulations, and strategic fundamentals. Updated for the 2024 season ruleset."
+            />
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {keyStats.map((stat) => (
                     <div key={stat.label} className="f1-card p-6 flex flex-col items-center text-center group relative">
                         <stat.icon className="w-8 h-8 text-f1-red mb-3" />
-                        <span className="text-2xl font-bold text-white mb-1">{stat.value}</span>
+                        <span className="text-2xl font-bold text-f1-text mb-1">{stat.value}</span>
                         <span className="text-sm text-f1-silver/80">{stat.label}</span>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-2 left-0 right-0 text-xs text-f1-silver/60 px-2">
                             {stat.detail}
@@ -157,7 +151,7 @@ const F1Guide: React.FC = () => {
 
                     {Object.entries(DetailedGuide).map(([key, section]) => (
                         <TabsContent key={key} value={key} className="space-y-6">
-                            <h2 className="text-2xl font-bold text-white mb-4">{section.title}</h2>
+                            <h2 className="text-2xl font-bold text-f1-text mb-4">{section.title}</h2>
                             {section.sections.map((subsection, idx) => (
                                 <div key={idx} className="bg-f1-gray/20 rounded-lg p-6 space-y-4">
                                     <h3 className="text-xl font-bold text-f1-red flex items-center gap-2">
@@ -181,7 +175,7 @@ const F1Guide: React.FC = () => {
 
             {/* Call to Action */}
             <div className="f1-card p-8 text-center">
-                <h2 className="text-3xl font-bold text-white mb-6">Ready to Experience F1?</h2>
+                <h2 className="text-3xl font-bold text-f1-text mb-6">Ready to Experience F1?</h2>
                 <div className="flex flex-wrap justify-center gap-4">
                     <NavLink
                         to="/live"
@@ -192,7 +186,7 @@ const F1Guide: React.FC = () => {
                     </NavLink>
                     <NavLink
                         to="/season"
-                        className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300"
+                        className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-f1-text rounded-lg hover:bg-f1-gray/50 transition-colors duration-300"
                     >
                         <Trophy className="w-5 h-5 mr-2" />
                         View Standings

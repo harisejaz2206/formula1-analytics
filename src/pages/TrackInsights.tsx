@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { getCircuits, getSeasons } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import SeasonSelector from '../components/SeasonSelector';
+import PageHeader from '../components/layout/PageHeader';
 import { MapPin, Calendar, Globe2, Trophy, Flag, ExternalLink, Clock, Zap, Activity } from 'lucide-react';
 
 interface Circuit {
@@ -32,7 +34,7 @@ const TrackInsights: React.FC = () => {
         // Transform the seasons data to array of strings
         const transformedSeasons = seasonsData.map((season: any) => season.season.toString());
         setSeasons(transformedSeasons);
-      } catch (err) {
+      } catch {
         setError('Failed to load seasons');
       }
     };
@@ -48,7 +50,7 @@ const TrackInsights: React.FC = () => {
         if (circuitsData.length > 0) {
           setSelectedCircuit(circuitsData[0]);
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load circuits');
       } finally {
         setLoading(false);
@@ -62,21 +64,17 @@ const TrackInsights: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
-        <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-white mb-2">Track Insights</h1>
-          <p className="text-f1-silver/80 text-lg">Circuit Details and Analysis</p>
-        </div>
-        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
-          <Flag className="w-full h-full" />
-        </div>
-      </div>
+      <PageHeader
+        icon={MapPin}
+        overline="CIRCUIT GEOGRAPHY + TRACK CONTEXT"
+        title="Track Insights"
+        subtitle="Circuit-level context, race location intelligence, and map-oriented exploration across seasons."
+      />
 
       {/* Selectors Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="f1-card p-6 backdrop-blur-sm">
-          <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider flex items-center">
+        <div className="f1-card p-6">
+          <label className="mb-2 flex items-center text-sm font-medium uppercase tracking-[0.14em] text-f1-muted">
             <Calendar className="w-4 h-4 mr-2 text-f1-red" />
             Season
           </label>
@@ -86,8 +84,8 @@ const TrackInsights: React.FC = () => {
             onSeasonChange={setSelectedSeason}
           />
         </div>
-        <div className="f1-card p-6 backdrop-blur-sm">
-          <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider flex items-center">
+        <div className="f1-card p-6">
+          <label className="mb-2 flex items-center text-sm font-medium uppercase tracking-[0.14em] text-f1-muted">
             <MapPin className="w-4 h-4 mr-2 text-f1-red" />
             Circuit
           </label>
@@ -97,15 +95,13 @@ const TrackInsights: React.FC = () => {
               const circuit = circuits.find(c => c.circuitId === e.target.value);
               if (circuit) setSelectedCircuit(circuit);
             }}
-            className="w-full px-4 py-2.5 bg-f1-black border border-f1-gray rounded-lg
-                      text-f1-silver hover:border-f1-red focus:border-f1-red focus:ring-1 focus:ring-f1-red
-                      transition-colors duration-200"
+            className="f1-select"
           >
             {circuits.map((circuit) => (
               <option
                 key={circuit.circuitId}
                 value={circuit.circuitId}
-                className="bg-f1-black text-f1-silver hover:bg-f1-gray"
+                className="bg-f1-surface text-f1-text"
               >
                 {circuit.circuitName}
               </option>
@@ -119,7 +115,7 @@ const TrackInsights: React.FC = () => {
           {/* Circuit Map Section */}
           <section className="f1-card p-6 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <h2 className="text-2xl font-bold text-f1-text mb-6 flex items-center">
               <Globe2 className="w-6 h-6 mr-2 text-f1-red" />
               Circuit Map
             </h2>
@@ -127,7 +123,7 @@ const TrackInsights: React.FC = () => {
               <div className="w-full h-[400px] rounded-lg border-2 border-f1-gray/20 bg-f1-black/50 
                               flex flex-col items-center justify-center p-8 text-center">
                 <MapPin className="w-16 h-16 text-f1-red mb-4 animate-bounce" />
-                <h3 className="text-2xl font-bold text-white mb-2">
+                <h3 className="text-2xl font-bold text-f1-text mb-2">
                   Interactive Circuit Map Coming Soon
                 </h3>
                 <p className="text-f1-silver/60 max-w-md mb-6">
@@ -162,7 +158,7 @@ const TrackInsights: React.FC = () => {
             {/* Location Details */}
             <section className="f1-card p-6 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+              <h2 className="text-2xl font-bold text-f1-text mb-6 flex items-center">
                 <MapPin className="w-6 h-6 mr-2 text-f1-red" />
                 Location Details
               </h2>
@@ -198,7 +194,7 @@ const TrackInsights: React.FC = () => {
             {/* Track Records */}
             <section className="f1-card p-6 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+              <h2 className="text-2xl font-bold text-f1-text mb-6 flex items-center">
                 <Trophy className="w-6 h-6 mr-2 text-f1-red" />
                 Track Records
               </h2>

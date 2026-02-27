@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { getDriverStandings, getConstructorStandings, getSeasons, getSeasonResults } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import PageHeader from '../components/layout/PageHeader';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
-import { Trophy, Building2, Flag, Target, Calendar, ChevronDown, TrendingUp } from 'lucide-react';
+import { Trophy, Building2, Flag, Target, Calendar, TrendingUp } from 'lucide-react';
 
 const SeasonOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ const SeasonOverview: React.FC = () => {
         if (seasonYears.includes(currentYear) && selectedSeason !== currentYear) {
           setSelectedSeason(currentYear);
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load seasons');
       }
     };
@@ -101,7 +103,7 @@ const SeasonOverview: React.FC = () => {
         setConstructorStandings(constructors);
         setSeasonResults(results);
         setCumulativePoints(cumulativeData);
-      } catch (err) {
+      } catch {
         console.error('Error fetching season data:', err);
         setError('Failed to load season data. Please try again.');
       } finally {
@@ -136,30 +138,23 @@ const SeasonOverview: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
-        <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-white mb-2">{selectedSeason} Season Overview</h1>
-          <p className="text-f1-silver/80 text-lg">Championship Standings and Statistics</p>
-        </div>
-        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
-          <svg viewBox="0 0 200 200" className="w-full h-full">
-            <path fill="currentColor" d="M73.1,-23.3C80.1,-2.3,63.8,25.2,40.6,42.6C17.4,60.1,-12.9,67.6,-38.4,56.5C-63.9,45.4,-84.6,15.6,-80.5,-11.4C-76.4,-38.4,-47.4,-62.7,-18.9,-69.5C9.6,-76.4,66.1,-44.3,73.1,-23.3Z" transform="translate(100 100)" />
-          </svg>
-        </div>
-      </div>
+      <PageHeader
+        icon={TrendingUp}
+        overline="SEASON-TIME PERFORMANCE INTELLIGENCE"
+        title={`${selectedSeason} Season Overview`}
+        subtitle="Standings progression, constructor parity, and points-share visual analytics for the full campaign."
+      />
 
-      <div className="f1-card p-4 mb-8 flex items-center justify-between">
+      <div className="f1-card mb-8 flex flex-col items-start justify-between gap-4 p-4 sm:flex-row sm:items-center">
         <div className="flex items-center">
           <Calendar className="w-6 h-6 text-f1-red mr-2" />
-          <h2 className="text-xl font-bold text-white">Season Overview</h2>
+          <h2 className="text-xl font-semibold text-f1-text">Season Overview</h2>
         </div>
-        <div className="relative">
+        <div className="w-full sm:w-auto">
           <select
             value={selectedSeason}
             onChange={(e) => setSelectedSeason(e.target.value)}
-            className="f1-card px-4 py-2 pr-8 text-white bg-f1-gray/20 rounded-lg cursor-pointer 
-              hover:bg-f1-gray/30 transition-colors duration-200 appearance-none border border-f1-gray/10"
+            className="f1-select min-w-[12rem]"
           >
             {seasons
               .sort((a, b) => parseInt(b) - parseInt(a))
@@ -173,9 +168,6 @@ const SeasonOverview: React.FC = () => {
                 );
               })}
           </select>
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-            <ChevronDown className="w-4 h-4 text-f1-red" />
-          </div>
         </div>
       </div>
 
@@ -183,7 +175,7 @@ const SeasonOverview: React.FC = () => {
         {/* Driver Standings Chart */}
         <div className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
             <Trophy className="w-6 h-6 mr-2 text-f1-red" />
             Top 5 Drivers
           </h2>
@@ -247,7 +239,7 @@ const SeasonOverview: React.FC = () => {
         {/* Constructor Standings Chart */}
         <div className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
             <Building2 className="w-6 h-6 mr-2 text-f1-red" />
             Top 5 Constructors
           </h2>
@@ -312,7 +304,7 @@ const SeasonOverview: React.FC = () => {
       {/* Updated Points Progression Chart */}
       <div className="f1-card p-6 relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+        <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
           <Trophy className="w-6 h-6 mr-2 text-f1-red" />
           Points Progression
         </h2>
@@ -360,7 +352,7 @@ const SeasonOverview: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Total Races</h3>
+            <h3 className="text-lg font-semibold text-f1-text">Total Races</h3>
             <Flag className="w-6 h-6 text-f1-red" />
           </div>
           <p className="text-3xl font-bold text-f1-silver">{totalRaces}</p>
@@ -368,7 +360,7 @@ const SeasonOverview: React.FC = () => {
 
         <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Season Points</h3>
+            <h3 className="text-lg font-semibold text-f1-text">Season Points</h3>
             <Target className="w-6 h-6 text-f1-red" />
           </div>
           <p className="text-3xl font-bold text-f1-silver">1,431</p>
@@ -376,7 +368,7 @@ const SeasonOverview: React.FC = () => {
 
         <div className="f1-card p-6 hover:scale-105 transition-transform duration-300">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Different Winners</h3>
+            <h3 className="text-lg font-semibold text-f1-text">Different Winners</h3>
             <Trophy className="w-6 h-6 text-f1-red" />
           </div>
           <p className="text-3xl font-bold text-f1-silver">5</p>
@@ -388,7 +380,7 @@ const SeasonOverview: React.FC = () => {
         {/* Average Points Per Race */}
         <div className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
             <TrendingUp className="w-6 h-6 mr-2 text-f1-red" />
             Average Points Per Race
           </h2>
@@ -474,7 +466,7 @@ const SeasonOverview: React.FC = () => {
         {/* Win Distribution Pie Chart */}
         <div className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
             <Trophy className="w-6 h-6 mr-2 text-f1-red" />
             Win Distribution
           </h2>
@@ -557,7 +549,7 @@ const SeasonOverview: React.FC = () => {
 
       {/* Add Constructor Performance Comparison */}
       <div className="f1-card p-6 mb-8">
-        <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+        <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
           <Building2 className="w-6 h-6 mr-2 text-f1-red" />
           Constructor Performance
         </h2>
@@ -593,7 +585,7 @@ const SeasonOverview: React.FC = () => {
       {/* Add Constructor Performance Comparison */}
       <div className="f1-card p-6 relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+        <h2 className="text-2xl font-bold mb-6 text-f1-text flex items-center">
           <Trophy className="w-6 h-6 mr-2 text-f1-red" />
           Championship Points Share
         </h2>

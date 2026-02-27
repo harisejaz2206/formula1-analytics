@@ -42,7 +42,7 @@ const About: React.FC = () => {
             icon: Github,
             label: 'GitHub',
             href: 'https://github.com/harisejaz2206',
-            color: 'hover:text-purple-400'
+            color: 'hover:text-cyan-400'
         },
         {
             icon: Linkedin,
@@ -65,7 +65,7 @@ const About: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-f1-red/20 to-transparent opacity-50" />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center space-y-8 animate-on-scroll opacity-0 translate-y-8">
-                        <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
+                        <h1 className="text-5xl md:text-7xl font-bold text-f1-text tracking-tight">
                             Driving Innovation in
                             <span className="text-f1-red block mt-2">Formula 1 Analytics</span>
                         </h1>
@@ -84,7 +84,7 @@ const About: React.FC = () => {
                     <div className="relative z-10">
                         <div className="flex flex-col md:flex-row items-center gap-8">
                             <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-f1-red to-purple-600 rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
+                                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-f1-red to-cyan-500 blur opacity-25 transition duration-1000 group-hover:opacity-75"></div>
                                 <div className="relative w-48 h-48 rounded-full overflow-hidden">
                                     <img
                                         src="/profilepic.png"
@@ -94,7 +94,7 @@ const About: React.FC = () => {
                                 </div>
                             </div>
                             <div className="space-y-4 text-center md:text-left">
-                                <h2 className="text-3xl font-bold text-white">Haris Ejaz</h2>
+                                <h2 className="text-3xl font-bold text-f1-text">Haris Ejaz</h2>
                                 <p className="text-f1-silver/80 max-w-2xl leading-relaxed">
                                     Full-stack developer and F1 enthusiast with a passion for creating
                                     immersive digital experiences. Specializing in modern web technologies
@@ -129,21 +129,21 @@ const About: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="f1-card p-6 animate-on-scroll opacity-0 translate-y-8">
                         <Terminal className="w-8 h-8 text-f1-red mb-4" />
-                        <h3 className="text-xl font-bold text-white mb-2">Modern Stack</h3>
+                        <h3 className="text-xl font-bold text-f1-text mb-2">Modern Stack</h3>
                         <p className="text-f1-silver/70">
                             Built with React, TypeScript, and Tailwind CSS for a blazing-fast user experience.
                         </p>
                     </div>
                     <div className="f1-card p-6 animate-on-scroll opacity-0 translate-y-8 delay-100">
                         <Code className="w-8 h-8 text-f1-red mb-4" />
-                        <h3 className="text-xl font-bold text-white mb-2">Clean Code</h3>
+                        <h3 className="text-xl font-bold text-f1-text mb-2">Clean Code</h3>
                         <p className="text-f1-silver/70">
                             Maintainable, well-documented code following best practices and design patterns.
                         </p>
                     </div>
                     <div className="f1-card p-6 animate-on-scroll opacity-0 translate-y-8 delay-200">
                         <Cpu className="w-8 h-8 text-f1-red mb-4" />
-                        <h3 className="text-xl font-bold text-white mb-2">Real-time Data</h3>
+                        <h3 className="text-xl font-bold text-f1-text mb-2">Real-time Data</h3>
                         <p className="text-f1-silver/70">
                             Live race tracking and analytics powered by advanced APIs and WebSocket connections.
                         </p>
@@ -154,7 +154,7 @@ const About: React.FC = () => {
             {/* Contact CTA */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="f1-card p-8 text-center animate-on-scroll opacity-0 translate-y-8">
-                    <h2 className="text-3xl font-bold text-white mb-4">Get in Touch</h2>
+                    <h2 className="text-3xl font-bold text-f1-text mb-4">Get in Touch</h2>
                     <p className="text-f1-silver/80 mb-6 max-w-2xl mx-auto">
                         Have questions about F1IQ or interested in collaboration?
                         I'd love to hear from you!

@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { getRaceResults, getLapTimes, getSeasons, getRounds, getPitStops } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SeasonSelector from '../components/SeasonSelector';
 import RoundSelector from '../components/RoundSelector';
+import PageHeader from '../components/layout/PageHeader';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer
@@ -29,7 +31,7 @@ const RaceTracker: React.FC = () => {
         const seasonsData = await getSeasons();
         const transformedSeasons = seasonsData.map((season: any) => season.season);
         setSeasons(transformedSeasons);
-      } catch (err) {
+      } catch {
         setError('Failed to load seasons');
       }
     };
@@ -67,7 +69,7 @@ const RaceTracker: React.FC = () => {
           
           setSelectedRound(bestRound.round);
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load rounds');
       }
     };
@@ -97,7 +99,7 @@ const RaceTracker: React.FC = () => {
         }
         
         setRaceData(race);
-      } catch (err) {
+      } catch {
         setError('Failed to load race data. This race may not have happened yet.');
       } finally {
         setLoading(false);
@@ -267,40 +269,42 @@ const RaceTracker: React.FC = () => {
     }));
   };
 
+  const headerSection = (
+    <PageHeader
+      icon={Flag}
+      overline="LIVE + HISTORICAL RACE ANALYSIS"
+      title="Race Tracker"
+      subtitle="Live race outcomes, lap behavior, pit strategy, and position deltas with no analytics regressions."
+    />
+  );
+
+  const selectorsSection = (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="f1-card p-6">
+        <label className="mb-2 block text-sm font-medium uppercase tracking-[0.14em] text-f1-muted">Season</label>
+        <SeasonSelector
+          seasons={seasons}
+          selectedSeason={selectedSeason}
+          onSeasonChange={setSelectedSeason}
+        />
+      </div>
+      <div className="f1-card p-6">
+        <label className="mb-2 block text-sm font-medium uppercase tracking-[0.14em] text-f1-muted">Round</label>
+        <RoundSelector
+          rounds={rounds}
+          selectedRound={selectedRound}
+          onRoundChange={setSelectedRound}
+        />
+      </div>
+    </div>
+  );
+
   if (loading) return <LoadingSpinner />;
   if (error) {
     return (
       <div className="space-y-8">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
-          <div className="relative z-10">
-            <h1 className="text-4xl font-bold text-white mb-2">Race Tracker</h1>
-            <p className="text-f1-silver/80 text-lg">Live Race Results and Analysis</p>
-          </div>
-          <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
-            <Flag className="w-full h-full" />
-          </div>
-        </div>
-
-        {/* Selectors Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="f1-card p-6 backdrop-blur-sm">
-            <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider">Season</label>
-            <SeasonSelector
-              seasons={seasons}
-              selectedSeason={selectedSeason}
-              onSeasonChange={setSelectedSeason}
-            />
-          </div>
-          <div className="f1-card p-6 backdrop-blur-sm">
-            <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider">Round</label>
-            <RoundSelector
-              rounds={rounds}
-              selectedRound={selectedRound}
-              onRoundChange={setSelectedRound}
-            />
-          </div>
-        </div>
+        {headerSection}
+        {selectorsSection}
 
         {/* Error Message with Race Info */}
         <div className="f1-card p-8 text-center">
@@ -309,13 +313,13 @@ const RaceTracker: React.FC = () => {
               <Clock className="w-8 h-8 text-f1-red" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white mb-2">Race Not Available</h3>
-              <p className="text-f1-silver/80 max-w-md mx-auto">
+              <h3 className="mb-2 text-xl font-semibold text-f1-text">Race Not Available</h3>
+              <p className="mx-auto max-w-md text-f1-muted">
                 {error}
               </p>
               {/* Show race info if we have rounds data */}
               {rounds.length > 0 && selectedRound && (
-                <div className="mt-4 p-4 bg-f1-gray/20 rounded-lg">
+                <div className="mt-4 rounded-lg border border-f1-gray/30 bg-f1-surface-soft p-4">
                   {(() => {
                     const race = rounds.find((r: any) => r.round === selectedRound);
                     if (race) {
@@ -323,12 +327,12 @@ const RaceTracker: React.FC = () => {
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center justify-center space-x-2">
                             <MapPin className="w-4 h-4 text-f1-red" />
-                            <span className="text-white font-medium">{race.raceName}</span>
+                            <span className="font-medium text-f1-text">{race.raceName}</span>
                           </div>
-                          <div className="text-f1-silver/60">
+                          <div className="text-f1-muted">
                             {race.Circuit?.circuitName}
                           </div>
-                          <div className="text-f1-silver/60">
+                          <div className="text-f1-muted">
                             Scheduled: {race.date} {race.time && `at ${race.time}`}
                           </div>
                         </div>
@@ -347,36 +351,8 @@ const RaceTracker: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray p-8 mb-8">
-        <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-white mb-2">Race Tracker</h1>
-          <p className="text-f1-silver/80 text-lg">Live Race Results and Analysis</p>
-        </div>
-        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
-          <Flag className="w-full h-full" />
-        </div>
-      </div>
-
-      {/* Selectors Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="f1-card p-6 backdrop-blur-sm">
-          <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider">Season</label>
-          <SeasonSelector
-            seasons={seasons}
-            selectedSeason={selectedSeason}
-            onSeasonChange={setSelectedSeason}
-          />
-        </div>
-        <div className="f1-card p-6 backdrop-blur-sm">
-          <label className="block text-sm font-medium text-f1-silver mb-2 uppercase tracking-wider">Round</label>
-          <RoundSelector
-            rounds={rounds}
-            selectedRound={selectedRound}
-            onRoundChange={setSelectedRound}
-          />
-        </div>
-      </div>
+      {headerSection}
+      {selectorsSection}
 
       {raceData && (
         <section className="f1-card p-6 relative overflow-hidden group">
@@ -389,8 +365,8 @@ const RaceTracker: React.FC = () => {
           {/* Race Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">{raceData.raceName}</h2>
-              <div className="flex items-center text-f1-silver/80">
+              <h2 className="mb-2 text-2xl font-semibold text-f1-text">{raceData.raceName}</h2>
+              <div className="flex items-center text-f1-muted">
                 <MapPin className="w-4 h-4 mr-2" />
                 <span>{raceData.Circuit.circuitName}</span>
               </div>
@@ -399,43 +375,40 @@ const RaceTracker: React.FC = () => {
 
           {/* Results Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-800">
-              <thead className="bg-f1-black/50">
+            <table className="f1-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Position</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Driver</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Constructor</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Time/Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Points</th>
+                  <th>Position</th>
+                  <th>Driver</th>
+                  <th>Constructor</th>
+                  <th>Time/Status</th>
+                  <th>Points</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody>
                 {raceData.Results.map((result: any) => (
-                  <tr
-                    key={result.position}
-                    className="group/row hover:bg-f1-gray/30 transition-colors duration-200"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={result.position}>
+                    <td className="whitespace-nowrap">
                       <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full 
                         ${result.position === '1' ? 'bg-f1-red text-white' :
                           result.position === '2' ? 'bg-gray-600 text-white' :
                             result.position === '3' ? 'bg-amber-700 text-white' :
-                              'bg-f1-gray/20 text-f1-silver'}`}>
+                              'bg-f1-gray/20 text-f1-text'}`}>
                         {result.position}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       <div className="font-medium">{result.Driver.givenName} {result.Driver.familyName}</div>
-                      <div className="text-f1-silver/60 text-xs">{result.Driver.nationality}</div>
+                      <div className="text-f1-muted text-xs">{result.Driver.nationality}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-f1-silver">{result.Constructor.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">{result.Constructor.name}</td>
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       <div className="flex items-center">
                         <Clock className="w-4 h-4 mr-2 text-f1-red" />
                         {result.Time?.time || result.status}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       <span className="px-3 py-1 rounded-full bg-f1-red/10 text-f1-red font-medium">
                         {result.points} pts
                       </span>
@@ -452,7 +425,7 @@ const RaceTracker: React.FC = () => {
       {lapTimes.length > 0 && (
         <section className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="mb-6 flex items-center text-2xl font-semibold text-f1-text">
             <Clock className="w-6 h-6 mr-2 text-f1-red" />
             Lap Times Analysis
           </h2>
@@ -476,8 +449,8 @@ const RaceTracker: React.FC = () => {
                       return (
                         <div className="bg-f1-black/95 backdrop-blur-md border border-f1-gray/30 rounded-lg p-4 shadow-xl">
                           <div className="border-b border-f1-gray/30 pb-2 mb-3">
-                            <span className="text-f1-silver/80 text-sm">Lap </span>
-                            <span className="text-white font-bold">{label}</span>
+                            <span className="text-f1-muted text-sm">Lap </span>
+                            <span className="font-bold text-f1-text">{label}</span>
                           </div>
                           <div className="space-y-2">
                             {payload.map((entry: any, index: number) => (
@@ -487,15 +460,15 @@ const RaceTracker: React.FC = () => {
                                     className="w-2 h-2 rounded-full" 
                                     style={{ backgroundColor: entry.color }}
                                   />
-                                  <span className="text-f1-silver whitespace-nowrap">
+                                  <span className="whitespace-nowrap text-f1-muted">
                                     {entry.name}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-white font-mono font-bold">
+                                  <span className="font-mono font-bold text-f1-text">
                                     {Number(entry.value).toFixed(3)}
                                   </span>
-                                  <span className="text-f1-silver/60 text-sm">s</span>
+                                  <span className="text-f1-muted text-sm">s</span>
                                 </div>
                               </div>
                             ))}
@@ -503,12 +476,12 @@ const RaceTracker: React.FC = () => {
                           {/* Gap to Leader */}
                           {payload.length > 1 && (
                             <div className="mt-3 pt-3 border-t border-f1-gray/30">
-                              <div className="text-f1-silver/80 text-sm mb-2">Gap to Leader</div>
+                              <div className="mb-2 text-sm text-f1-muted">Gap to Leader</div>
                               {payload.slice(1).map((entry: any, index: number) => {
                                 const gap = (Number(entry.value) - Number(payload[0]?.value || 0)).toFixed(3);
                                 return (
                                   <div key={`gap-${index}`} className="flex items-center justify-between text-sm">
-                                    <span className="text-f1-silver/60">{entry.name}</span>
+                                    <span className="text-f1-muted">{entry.name}</span>
                                     <span className={`font-mono ${Number(gap) > 0 ? 'text-red-400' : 'text-green-400'}`}>
                                       {Number(gap) > 0 ? '+' : ''}{gap}s
                                     </span>
@@ -534,7 +507,7 @@ const RaceTracker: React.FC = () => {
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: entry.color }}
                           />
-                          <span className="text-f1-silver text-sm">{entry.value}</span>
+                          <span className="text-f1-muted text-sm">{entry.value}</span>
                         </div>
                       ))}
                     </div>
@@ -562,7 +535,7 @@ const RaceTracker: React.FC = () => {
       {pitStops.length > 0 && (
         <section className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="mb-6 flex items-center text-2xl font-semibold text-f1-text">
             <Timer className="w-6 h-6 mr-2 text-f1-red" />
             Pit Stop Analysis
           </h2>
@@ -571,22 +544,22 @@ const RaceTracker: React.FC = () => {
             {getPitStopSummary(pitStops).map((summary: any) => (
               <div
                 key={summary.driver}
-                className="bg-f1-gray/20 rounded-xl p-4 hover:bg-f1-gray/30 transition-colors duration-200 border border-f1-gray/10"
+                className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/80 p-4 transition-colors duration-200 hover:bg-f1-surface-soft"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold text-white">{summary.driver}</span>
+                  <span className="text-lg font-semibold text-f1-text">{summary.driver}</span>
                   <span className="px-3 py-1 rounded-full bg-f1-red/10 text-f1-red font-medium">
                     {summary.stops} {summary.stops === 1 ? 'stop' : 'stops'}
                   </span>
                 </div>
-                <div className="space-y-2 text-sm text-f1-silver/80">
+                <div className="space-y-2 text-sm text-f1-muted">
                   <div className="flex justify-between">
                     <span>Average Duration:</span>
-                    <span className="font-medium text-white">{summary.avgDuration.toFixed(3)}s</span>
+                    <span className="font-medium text-f1-text">{summary.avgDuration.toFixed(3)}s</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Total Pit Time:</span>
-                    <span className="font-medium text-white">{summary.totalTime.toFixed(3)}s</span>
+                    <span className="font-medium text-f1-text">{summary.totalTime.toFixed(3)}s</span>
                   </div>
                 </div>
               </div>
@@ -598,7 +571,7 @@ const RaceTracker: React.FC = () => {
       {positionChanges.length > 0 && (
         <section className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="mb-6 flex items-center text-2xl font-semibold text-f1-text">
             <Trophy className="w-6 h-6 mr-2 text-f1-red" />
             Position Changes Analysis
           </h2>
@@ -607,41 +580,41 @@ const RaceTracker: React.FC = () => {
             {positionChanges.map((driver) => (
               <div
                 key={driver.driverName}
-                className="bg-f1-gray/20 rounded-xl p-4 hover:bg-f1-gray/30 transition-colors duration-200 border border-f1-gray/10"
+                className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/80 p-4 transition-colors duration-200 hover:bg-f1-surface-soft"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold text-white">{driver.driverName}</span>
-                  <span className="text-sm text-f1-silver">{driver.constructor}</span>
+                  <span className="text-lg font-semibold text-f1-text">{driver.driverName}</span>
+                  <span className="text-sm text-f1-muted">{driver.constructor}</span>
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-f1-silver">
+                  <div className="flex justify-between text-f1-muted">
                     <span>Start Position:</span>
-                    <span className="font-medium text-white">{driver.startPosition}</span>
+                    <span className="font-medium text-f1-text">{driver.startPosition}</span>
                   </div>
-                  <div className="flex justify-between text-f1-silver">
+                  <div className="flex justify-between text-f1-muted">
                     <span>Final Position:</span>
-                    <span className="font-medium text-white">{driver.endPosition}</span>
+                    <span className="font-medium text-f1-text">{driver.endPosition}</span>
                   </div>
-                  <div className="flex justify-between text-f1-silver">
+                  <div className="flex justify-between text-f1-muted">
                     <span>Position Change:</span>
                     {driver.positionChange !== "N/A" && typeof driver.positionChange === 'number' ? (
                       <span className={`font-medium ${driver.positionChange > 0
                         ? 'text-green-400'
                         : driver.positionChange < 0
                           ? 'text-red-400'
-                          : 'text-white'
+                          : 'text-f1-text'
                         }`}>
                         {driver.positionChange > 0 ? '+' : ''}
                         {driver.positionChange}
                       </span>
                     ) : (
-                      <span className="font-medium text-white">N/A</span>
+                      <span className="font-medium text-f1-text">N/A</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-f1-silver">
+                  <div className="flex justify-between text-f1-muted">
                     <span>Status:</span>
-                    <span className="font-medium text-white">{driver.status}</span>
+                    <span className="font-medium text-f1-text">{driver.status}</span>
                   </div>
                 </div>
               </div>
@@ -653,49 +626,46 @@ const RaceTracker: React.FC = () => {
       {qualifyingComparison.length > 0 && (
         <section className="f1-card p-6 relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
+          <h2 className="mb-6 flex items-center text-2xl font-semibold text-f1-text">
             <Clock className="w-6 h-6 mr-2 text-f1-red" />
             Race Performance Analysis
           </h2>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-800">
-              <thead className="bg-f1-black/50">
+            <table className="f1-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Driver</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Constructor</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Grid</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Gap to Leader</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Fastest Lap</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Avg Speed</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-f1-silver uppercase tracking-wider">Points</th>
+                  <th>Driver</th>
+                  <th>Constructor</th>
+                  <th>Grid</th>
+                  <th>Gap to Leader</th>
+                  <th>Fastest Lap</th>
+                  <th>Avg Speed</th>
+                  <th>Points</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody>
                 {qualifyingComparison.map((driver) => (
-                  <tr
-                    key={driver.driverName}
-                    className="hover:bg-f1-gray/30 transition-colors duration-200"
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-white">
+                  <tr key={driver.driverName}>
+                    <td className="whitespace-nowrap text-sm font-medium text-f1-text">
                       {driver.driverName}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       {driver.constructor}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       {driver.gridPosition}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       {driver.finishTime}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       {driver.fastestLap}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-f1-silver">
+                    <td className="whitespace-nowrap text-sm text-f1-text">
                       {driver.averageSpeed !== "N/A" ? `${driver.averageSpeed} km/h` : "N/A"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       <span className="px-2 py-1 rounded-full bg-f1-red/10 text-f1-red text-sm font-medium">
                         {driver.points}
                       </span>

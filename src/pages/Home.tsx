@@ -1,319 +1,471 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    Flag, Timer, Users, MapPin, TrendingUp, ChevronRight,
-    Trophy, Gauge, Car, Calendar, Star, Activity, BookOpen, Sparkles
+  Activity,
+  BookOpen,
+  ChevronRight,
+  Gauge,
+  MapPin,
+  Sparkles,
+  Timer,
+  TrendingUp,
+  Trophy,
+  Users,
 } from 'lucide-react';
 
+type Compound = 'soft' | 'medium' | 'hard';
+
+interface StrategyDriver {
+  id: string;
+  name: string;
+  team: string;
+  baselinePit: number;
+  baseDelta: number;
+  baseRisk: number;
+}
+
 const telemetryMessages = [
-    "ANALYZING_RACE_STRATEGY...",
-    "CALCULATING_OPTIMAL_PITSTOP...",
-    "MONITORING_TIRE_DEGRADATION...",
-    "CHECKING_ERS_DEPLOYMENT...",
-    "MEASURING_DOWNFORCE_LEVELS...",
-    "ANALYZING_SECTOR_TIMES...",
-    "CALCULATING_FUEL_DELTA...",
-    "MONITORING_BRAKE_TEMPS...",
-    "DRS_DETECTION_ACTIVE...",
-    "SCANNING_TRACK_CONDITIONS..."
+  'MODEL: RACE PACE WINDOW ACTIVE',
+  'SIM: OVERTAKE PROBABILITY RECOMPUTED',
+  'TRACK EVOLUTION: +0.12S TREND',
+  'LIVE GAP ENGINE: TOP 5 DRIVERS LOCKED',
+  'PIT LOSS MODEL: GREEN WINDOW OPEN',
 ];
 
-const statusMessages = [
-    "DRS_ENABLED: TRUE",
-    "TIRE_COMPOUND: SOFT",
-    "ERS_MODE: OVERTAKE",
-    "FUEL_MODE: RICH",
-    "MGU-K: HARVESTING",
-    "BATTERY_SOC: 98%",
-    "GRIP_LEVEL: OPTIMAL",
-    "TRACK_STATUS: GREEN",
-    "DELTA_TIME: -0.245s",
-    "SLIPSTREAM: DETECTED"
+const raceControlSignals = [
+  { label: 'Data Freshness', value: '2.4s ago', tone: 'text-emerald-400' },
+  { label: 'Model Confidence', value: '93.2%', tone: 'text-f1-text' },
+  { label: 'Risk Engine', value: 'Low Volatility', tone: 'text-cyan-400' },
+  { label: 'Telemetry Status', value: 'Healthy', tone: 'text-emerald-400' },
+];
+
+const strategyDrivers: StrategyDriver[] = [
+  { id: 'verstappen', name: 'Max Verstappen', team: 'Red Bull', baselinePit: 24, baseDelta: -1.5, baseRisk: 28 },
+  { id: 'hamilton', name: 'Lewis Hamilton', team: 'Mercedes', baselinePit: 25, baseDelta: -0.8, baseRisk: 34 },
+  { id: 'leclerc', name: 'Charles Leclerc', team: 'Ferrari', baselinePit: 23, baseDelta: -0.9, baseRisk: 36 },
+  { id: 'norris', name: 'Lando Norris', team: 'McLaren', baselinePit: 24, baseDelta: -0.6, baseRisk: 31 },
+];
+
+const compoundImpact: Record<
+  Compound,
+  { label: string; timeImpact: number; risk: number; confidencePenalty: number; summary: string }
+> = {
+  soft: {
+    label: 'Soft',
+    timeImpact: -0.45,
+    risk: 16,
+    confidencePenalty: 6,
+    summary: 'Higher pace upside, higher degradation volatility.',
+  },
+  medium: {
+    label: 'Medium',
+    timeImpact: 0,
+    risk: 0,
+    confidencePenalty: 0,
+    summary: 'Balanced race pace and predictable tire life.',
+  },
+  hard: {
+    label: 'Hard',
+    timeImpact: 0.42,
+    risk: -6,
+    confidencePenalty: 2,
+    summary: 'Stability first, pace trade-off likely.',
+  },
+};
+
+const proofItems = [
+  { icon: Activity, title: 'API-integrated', text: 'Live race and season feeds in production pipeline.' },
+  { icon: Gauge, title: 'Performance-first', text: 'Route-split frontend with fast first interaction.' },
+  { icon: Sparkles, title: 'Product-grade UX', text: 'Designed for premium analytics workflows.' },
+  { icon: TrendingUp, title: 'Insight-led', text: 'Comparative metrics with strategy interpretation.' },
+];
+
+const capabilityCards = [
+  {
+    icon: Timer,
+    title: 'Live Race Intelligence',
+    insight: 'Top-5 delta model updates every race context switch.',
+    stat: 'Realtime',
+    href: '/live',
+  },
+  {
+    icon: Users,
+    title: 'Driver and Team Modeling',
+    insight: 'Teammate parity and championship pressure mapped together.',
+    stat: '20 Drivers',
+    href: '/profiles',
+  },
+  {
+    icon: MapPin,
+    title: 'Circuit Context Engine',
+    insight: 'Track geography layered with weekend performance framing.',
+    stat: '24 Circuits',
+    href: '/tracks',
+  },
+  {
+    icon: Trophy,
+    title: 'Season Storyline Lab',
+    insight: 'Points progression, constructor share, and momentum arcs.',
+    stat: 'Season-wide',
+    href: '/season',
+  },
 ];
 
 const Home: React.FC = () => {
-    const [messageIndex, setMessageIndex] = useState(0);
+  const strategyRef = useRef<HTMLElement | null>(null);
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [selectedDriverId, setSelectedDriverId] = useState(strategyDrivers[0].id);
+  const [pitLap, setPitLap] = useState(24);
+  const [compound, setCompound] = useState<Compound>('medium');
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [lastSimulation, setLastSimulation] = useState<Date>(new Date());
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setMessageIndex((prev) => (prev + 1) % telemetryMessages.length);
-        }, 3000);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((previous) => (previous + 1) % telemetryMessages.length);
+    }, 2600);
 
-        return () => clearInterval(interval);
-    }, []);
+    return () => clearInterval(interval);
+  }, []);
 
-    const features = [
-        {
-            icon: Timer,
-            title: "Race Tracker",
-            description: "Track live race positions, lap times, pit stops, and detailed performance analysis",
-            link: "/live"
-        },
-        {
-            icon: Users,
-            title: "Driver & Team Profiles",
-            description: "In-depth statistics, team battles, and comprehensive performance metrics",
-            link: "/profiles"
-        },
-        {
-            icon: MapPin,
-            title: "Track Insights",
-            description: "Circuit analysis, track records, and historical race data",
-            link: "/tracks"
-        },
-        {
-            icon: TrendingUp,
-            title: "Season Overview",
-            description: "Championship standings, points progression, and constructor performance analysis",
-            link: "/season"
-        }
-    ];
+  useEffect(() => {
+    if (!isSimulating) {
+      return;
+    }
 
-    const quickLinks = [
-        {
-            icon: Timer,
-            label: "Live Race",
-            subtext: "Real-time race tracking & analysis",
-            path: "/live"
-        },
-        {
-            icon: Trophy,
-            label: "Standings",
-            subtext: "Championship points & rankings",
-            path: "/season"
-        },
-        {
-            icon: Users,
-            label: "Teams",
-            subtext: "Constructor & driver profiles",
-            path: "/profiles"
-        },
-        {
-            icon: MapPin,
-            label: "Circuits",
-            subtext: "Track details & race history",
-            path: "/tracks"
-        },
-    ];
+    const timer = window.setTimeout(() => {
+      setIsSimulating(false);
+      setLastSimulation(new Date());
+    }, 1150);
 
-    return (
-        <div className="space-y-12">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-f1-black to-f1-gray min-h-[500px] flex items-center">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1505739679850-83414149af25?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-f1-black via-f1-black/80 to-transparent"></div>
+    return () => window.clearTimeout(timer);
+  }, [isSimulating]);
 
-                <div className="relative z-10 max-w-3xl mx-8">
-                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-                        Experience Formula 1
-                        <span className="text-f1-red block">Like Never Before</span>
-                    </h1>
-                    <p className="text-xl text-f1-silver/80 mb-8 leading-relaxed">
-                        Dive into the world of Formula 1 with real-time race tracking, comprehensive statistics, and in-depth analysis of every circuit and driver.
-                    </p>
-                    <div className="flex flex-wrap gap-4 mb-6">
-                        <NavLink
-                            to="/live"
-                            className="inline-flex items-center px-6 py-3 bg-f1-red text-white rounded-lg hover:bg-f1-red/90 transition-colors duration-300 w-full sm:w-auto"
-                        >
-                            <Timer className="w-5 h-5 mr-2 flex-shrink-0" />
-                            <span className="truncate">Live Race Tracker</span>
-                            <ChevronRight className="w-5 h-5 ml-2 flex-shrink-0" />
-                        </NavLink>
-                        <NavLink
-                            to="/season"
-                            className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300 w-full sm:w-auto"
-                        >
-                            <Trophy className="w-5 h-5 mr-2 flex-shrink-0" />
-                            <span className="truncate">Season Overview</span>
-                        </NavLink>
-                    </div>
-                </div>
-            </div>
+  const selectedDriver = useMemo(
+    () => strategyDrivers.find((driver) => driver.id === selectedDriverId) ?? strategyDrivers[0],
+    [selectedDriverId],
+  );
 
-            {/* Quick Links Section - With Subtexts */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {quickLinks.map((link) => (
-                    <NavLink
-                        key={link.label}
-                        to={link.path}
-                        className="f1-card p-6 flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-300 group"
-                    >
-                        <link.icon className="w-8 h-8 text-f1-red mb-3 group-hover:scale-110 transition-transform duration-300" />
-                        <span className="text-lg font-bold text-white mb-1">
-                            {link.label}
-                        </span>
-                        <span className="text-sm text-f1-silver/80 group-hover:text-f1-silver transition-colors duration-300">
-                            {link.subtext}
-                        </span>
-                    </NavLink>
-                ))}
-            </div>
-
-            {/* Add this after the Quick Links Section and before the Features Grid */}
-            <section className="f1-card p-8 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                        <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                            <BookOpen className="w-8 h-8 text-f1-red" />
-                            New to Formula 1?
-                        </h2>
-                        <p className="text-f1-silver/80 text-lg leading-relaxed">
-                            Dive into our comprehensive F1 guide. From race formats to technical regulations, 
-                            we've got everything you need to understand the pinnacle of motorsport.
-                        </p>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3 text-f1-silver">
-                                <Flag className="w-5 h-5 text-f1-red" />
-                                <span>Race Formats</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-f1-silver">
-                                <Trophy className="w-5 h-5 text-f1-red" />
-                                <span>Scoring System</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-f1-silver">
-                                <Gauge className="w-5 h-5 text-f1-red" />
-                                <span>Technical Rules</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-f1-silver">
-                                <Sparkles className="w-5 h-5 text-f1-red" />
-                                <span>Strategy Guide</span>
-                            </div>
-                        </div>
-                        <NavLink
-                            to="/guide"
-                            // onClick={() => console.log('Guide button clicked')}
-                            className="inline-flex items-center px-6 py-3 bg-f1-red text-white rounded-lg 
-                                      hover:bg-f1-red/90 transition-all duration-300 group/button relative z-30"
-                        >
-                            <BookOpen className="w-5 h-5 mr-2" />
-                            <span>Explore F1 Guide</span>
-                            <ChevronRight className="w-5 h-5 ml-2 group-hover/button:translate-x-1 transition-transform duration-300" />
-                        </NavLink>
-                    </div>
-                    
-                    <div className="relative hidden lg:block">
-                        <div className="absolute inset-0 bg-gradient-to-r from-f1-black/80 to-transparent z-10"></div>
-                        <div className="h-full w-full bg-f1-black rounded-lg overflow-hidden">
-                            {/* Tech Overlay Elements */}
-                            <div className="absolute inset-0 z-20 p-8 flex flex-col justify-between">
-                                <div className="flex justify-end">
-                                    <div className="text-f1-red/60 font-mono text-sm animate-pulse">
-                                        F1_TELEMETRY_SYSTEM_V23
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div className="text-f1-red/60 font-mono text-sm">
-                                        <div className="animate-typewriter">
-                                            {telemetryMessages[messageIndex]}
-                                        </div>
-                                    </div>
-                                    <div className="text-f1-red/60 font-mono text-sm">
-                                        {statusMessages[messageIndex]}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Enhanced Grid Animation */}
-                            <div className="grid-animation">
-                                {[...Array(150)].map((_, i) => (
-                                    <div 
-                                        key={i} 
-                                        className="grid-item"
-                                        style={{
-                                            animationDelay: `${Math.random() * 3}s`,
-                                            left: `${Math.random() * 100}%`,
-                                            top: `${Math.random() * 100}%`,
-                                            width: `${Math.random() * 6 + 2}px`,
-                                            height: `${Math.random() * 6 + 2}px`,
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Features Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {features.map((feature) => (
-                    <NavLink
-                        key={feature.title}
-                        to={feature.link}
-                        className="f1-card p-6 group hover:scale-[1.02] transition-all duration-300"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-f1-red/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <feature.icon className="w-8 h-8 text-f1-red mb-4" />
-                        <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
-                        <p className="text-f1-silver/80 mb-4">{feature.description}</p>
-                        <div className="flex items-center text-f1-red group-hover:translate-x-2 transition-transform duration-300">
-                            <span className="mr-2">Explore</span>
-                            <ChevronRight className="w-4 h-4" />
-                        </div>
-                    </NavLink>
-                ))}
-            </div>
-
-            {/* Call to Action Section - New */}
-            <div className="f1-card p-8 text-center">
-                <h2 className="text-3xl font-bold text-white mb-6">Ready to Experience F1?</h2>
-                <div className="flex flex-wrap justify-center gap-4">
-                    <NavLink
-                        to="/live"
-                        className="inline-flex items-center px-6 py-3 bg-f1-red text-white rounded-lg hover:bg-f1-red/90 transition-colors duration-300"
-                    >
-                        <Timer className="w-5 h-5 mr-2" />
-                        Live Race Tracker
-                    </NavLink>
-                    <NavLink
-                        to="/profiles"
-                        className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300"
-                    >
-                        <Users className="w-5 h-5 mr-2" />
-                        View Drivers & Teams
-                    </NavLink>
-                    <NavLink
-                        to="/tracks"
-                        className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300"
-                    >
-                        <MapPin className="w-5 h-5 mr-2" />
-                        Explore Tracks
-                    </NavLink>
-                    <NavLink
-                        to="/season"
-                        className="inline-flex items-center px-6 py-3 bg-f1-gray/30 text-white rounded-lg hover:bg-f1-gray/50 transition-colors duration-300"
-                    >
-                        <TrendingUp className="w-5 h-5 mr-2" />
-                        Season Stats
-                    </NavLink>
-                </div>
-            </div>
-
-            {/* Stats Section */}
-            <div className="f1-card p-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="text-center">
-                        <Gauge className="w-10 h-10 text-f1-red mx-auto mb-4" />
-                        <div className="text-4xl font-bold text-white mb-2">350+ km/h</div>
-                        <p className="text-f1-silver/60">Top Speeds</p>
-                    </div>
-                    <div className="text-center">
-                        <Flag className="w-10 h-10 text-f1-red mx-auto mb-4" />
-                        <div className="text-4xl font-bold text-white mb-2">23</div>
-                        <p className="text-f1-silver/60">Grand Prix</p>
-                    </div>
-                    <div className="text-center">
-                        <Trophy className="w-10 h-10 text-f1-red mx-auto mb-4" />
-                        <div className="text-4xl font-bold text-white mb-2">20</div>
-                        <p className="text-f1-silver/60">Drivers</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  const simulation = useMemo(() => {
+    const compoundModel = compoundImpact[compound];
+    const pitShift = pitLap - selectedDriver.baselinePit;
+    const projectedDeltaSeconds = selectedDriver.baseDelta + pitShift * 0.16 + compoundModel.timeImpact;
+    const positionSwing =
+      projectedDeltaSeconds <= -1.6
+        ? 2
+        : projectedDeltaSeconds <= -0.5
+          ? 1
+          : projectedDeltaSeconds < 0.8
+            ? 0
+            : projectedDeltaSeconds < 1.8
+              ? -1
+              : -2;
+    const riskScore = Math.min(95, Math.max(18, selectedDriver.baseRisk + Math.abs(pitShift) * 2.8 + compoundModel.risk));
+    const confidence = Math.min(
+      98,
+      Math.max(52, 95 - Math.abs(pitShift) * 2 - compoundModel.confidencePenalty - selectedDriver.baseRisk * 0.35),
     );
+    const recommendedLap = selectedDriver.baselinePit + (compound === 'hard' ? 2 : compound === 'soft' ? -1 : 0);
+
+    return {
+      pitShift,
+      projectedDeltaSeconds,
+      positionSwing,
+      riskScore,
+      confidence,
+      recommendedLap,
+      recommendation:
+        riskScore > 70
+          ? `High volatility detected. Consider pit lap ${recommendedLap} for a safer window.`
+          : projectedDeltaSeconds < 0
+            ? `This setup is projected to gain ${Math.abs(projectedDeltaSeconds).toFixed(2)}s versus baseline.`
+            : `Current setup is conservative. Move pit window closer to lap ${recommendedLap} for upside.`,
+      compoundSummary: compoundModel.summary,
+    };
+  }, [compound, pitLap, selectedDriver]);
+
+  const onRunDemo = () => {
+    strategyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setIsSimulating(true);
+  };
+
+  return (
+    <div className="space-y-8 pb-8">
+      <section className="f1-card overflow-hidden p-0">
+        <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="relative space-y-7 p-7 sm:p-10">
+            <div className="pointer-events-none absolute -top-24 right-10 h-56 w-56 rounded-full bg-f1-red/20 blur-3xl" />
+            <p className="f1-overline">PREMIUM FORMULA 1 ANALYTICS</p>
+            <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-f1-text sm:text-5xl lg:text-6xl">
+              Race Intelligence,
+              <span className="block text-f1-red">Not Just Race Data.</span>
+            </h1>
+            <p className="max-w-2xl text-base leading-relaxed text-f1-muted sm:text-lg">
+              F1IQ turns raw race feeds into a premium product demo experience with live context, strategic simulation, and
+              data-story clarity from the first interaction.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" onClick={onRunDemo} className="f1-button">
+                <Sparkles className="h-4 w-4" />
+                {isSimulating ? 'Running Demo...' : 'Run 30s Demo'}
+              </button>
+              <NavLink to="/live" className="f1-button-secondary">
+                <Timer className="h-4 w-4" />
+                Open Live Dashboard
+                <ChevronRight className="h-4 w-4" />
+              </NavLink>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs text-f1-muted">
+              <span className="rounded-full border border-f1-gray/35 bg-f1-surface-soft px-3 py-1.5 uppercase tracking-[0.12em]">
+                React + TypeScript
+              </span>
+              <span className="rounded-full border border-f1-gray/35 bg-f1-surface-soft px-3 py-1.5 uppercase tracking-[0.12em]">
+                API-Integrated
+              </span>
+              <span className="rounded-full border border-f1-gray/35 bg-f1-surface-soft px-3 py-1.5 uppercase tracking-[0.12em]">
+                Product Demo Ready
+              </span>
+            </div>
+
+            <p className="text-sm text-f1-muted">
+              Built by <NavLink to="/about" className="text-f1-text underline decoration-f1-red/70 underline-offset-4">Haris Ejaz</NavLink> for
+              premium motorsport analytics experiences.
+            </p>
+          </div>
+
+          <div className="hero-control-grid relative border-t border-f1-gray/30 bg-f1-black/40 p-6 sm:p-8 lg:border-l lg:border-t-0">
+            <div className="f1-card h-full p-5 sm:p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-f1-muted">Race Control Preview</p>
+                  <p className="mt-1 text-lg font-semibold text-f1-text">Live Weekend Intelligence</p>
+                </div>
+                <div className="hero-signal-dot" />
+              </div>
+
+              <div className="mb-4 rounded-xl border border-f1-gray/30 bg-f1-black/35 p-3 font-mono text-xs text-f1-red sm:text-sm">
+                {telemetryMessages[messageIndex]}
+              </div>
+
+              <div className="relative mb-4 rounded-xl border border-f1-gray/30 bg-f1-surface-soft/75 p-4">
+                <svg viewBox="0 0 320 150" className="h-32 w-full">
+                  <path
+                    d="M22 106C18 67 44 38 82 33H147C173 33 190 46 199 62L227 96C238 110 250 117 266 117H297"
+                    className="hero-track-path"
+                  />
+                  <path d="M22 106H89L122 83H158L187 104H240L297 117" className="hero-track-path-secondary" />
+                  <circle cx="199" cy="62" r="5" fill="rgb(var(--f1-neon))" />
+                  <circle cx="122" cy="83" r="4" fill="rgb(var(--f1-red))" />
+                </svg>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {raceControlSignals.map((signal) => (
+                  <div key={signal.label} className="rounded-lg border border-f1-gray/30 bg-f1-surface-soft/60 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-f1-muted">{signal.label}</p>
+                    <p className={`mt-1 text-sm font-semibold ${signal.tone}`}>{signal.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {proofItems.map((item) => (
+          <article key={item.title} className="f1-card p-4">
+            <item.icon className="mb-3 h-5 w-5 text-f1-red" />
+            <h2 className="text-base font-semibold text-f1-text">{item.title}</h2>
+            <p className="mt-1 text-sm text-f1-muted">{item.text}</p>
+          </article>
+        ))}
+      </section>
+
+      <section ref={strategyRef} className="f1-card p-6 sm:p-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="f1-overline">SIGNATURE INTERACTION</p>
+            <h2 className="text-3xl font-semibold text-f1-text">Strategy Sandbox (Lite)</h2>
+            <p className="mt-2 max-w-2xl text-f1-muted">
+              Adjust the pit window and compound, then see projected race impact instantly. This is the first step toward a full strategy engine.
+            </p>
+          </div>
+          <div className="rounded-lg border border-f1-gray/35 bg-f1-surface-soft px-3 py-2 text-sm text-f1-muted">
+            Last run: <span className="text-f1-text">{lastSimulation.toLocaleTimeString()}</span>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="space-y-6">
+            <div>
+              <label className="mb-2 block text-sm font-medium uppercase tracking-[0.12em] text-f1-muted">Driver</label>
+              <select
+                className="f1-select"
+                value={selectedDriverId}
+                onChange={(event) => setSelectedDriverId(event.target.value)}
+              >
+                {strategyDrivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.name} ({driver.team})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-sm font-medium uppercase tracking-[0.12em] text-f1-muted">Pit Lap Window</label>
+                <span className="text-sm font-semibold text-f1-text">Lap {pitLap}</span>
+              </div>
+              <input
+                type="range"
+                min={15}
+                max={40}
+                value={pitLap}
+                onChange={(event) => setPitLap(Number(event.target.value))}
+                className="strategy-slider"
+                aria-label="Pit lap slider"
+              />
+              <div className="mt-2 flex justify-between text-xs text-f1-muted">
+                <span>Conservative (15)</span>
+                <span>Aggressive (40)</span>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium uppercase tracking-[0.12em] text-f1-muted">Compound</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(Object.keys(compoundImpact) as Compound[]).map((compoundType) => (
+                  <button
+                    key={compoundType}
+                    type="button"
+                    onClick={() => setCompound(compoundType)}
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                      compound === compoundType
+                        ? 'border-f1-red/55 bg-f1-red/15 text-f1-text'
+                        : 'border-f1-gray/45 bg-f1-surface-soft text-f1-muted hover:text-f1-text'
+                    }`}
+                  >
+                    {compoundImpact[compoundType].label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-f1-muted">{simulation.compoundSummary}</p>
+            </div>
+
+            <button type="button" className="f1-button" onClick={() => setIsSimulating(true)}>
+              <Activity className="h-4 w-4" />
+              {isSimulating ? 'Recomputing Scenario...' : 'Recompute Scenario'}
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-f1-gray/30 bg-gradient-to-br from-f1-surface-soft to-f1-surface p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.14em] text-f1-muted">Projected Outcome</p>
+                <p className="mt-1 text-xl font-semibold text-f1-text">{selectedDriver.name}</p>
+              </div>
+              <span className="rounded-full bg-f1-red/10 px-3 py-1 text-sm font-semibold text-f1-red">{selectedDriver.team}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-f1-gray/35 bg-f1-black/35 p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-f1-muted">Delta vs Baseline</p>
+                <p
+                  className={`mt-1 text-2xl font-semibold ${
+                    simulation.projectedDeltaSeconds <= 0 ? 'text-emerald-400' : 'text-amber-300'
+                  }`}
+                >
+                  {simulation.projectedDeltaSeconds > 0 ? '+' : ''}
+                  {simulation.projectedDeltaSeconds.toFixed(2)}s
+                </p>
+              </div>
+              <div className="rounded-lg border border-f1-gray/35 bg-f1-black/35 p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-f1-muted">Position Swing</p>
+                <p className={`mt-1 text-2xl font-semibold ${simulation.positionSwing >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {simulation.positionSwing >= 0 ? '+' : ''}
+                  {simulation.positionSwing}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <div>
+                <div className="mb-1 flex justify-between text-xs text-f1-muted">
+                  <span>Risk Score</span>
+                  <span>{Math.round(simulation.riskScore)} / 100</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-f1-gray/40">
+                  <div className="h-full rounded-full bg-amber-400" style={{ width: `${simulation.riskScore}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="mb-1 flex justify-between text-xs text-f1-muted">
+                  <span>Confidence</span>
+                  <span>{Math.round(simulation.confidence)}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-f1-gray/40">
+                  <div className="h-full rounded-full bg-emerald-400" style={{ width: `${simulation.confidence}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-f1-gray/30 bg-f1-surface-soft/70 p-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-f1-muted">Recommendation</p>
+              <p className="mt-1 text-sm text-f1-text">{simulation.recommendation}</p>
+              <p className="mt-2 text-xs text-f1-muted">
+                Baseline lap {selectedDriver.baselinePit}; suggested test lap {simulation.recommendedLap}.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {capabilityCards.map((card) => (
+          <NavLink key={card.title} to={card.href} className="f1-card group p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <card.icon className="h-6 w-6 text-f1-red" />
+              <span className="rounded-full bg-f1-red/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-f1-red">
+                {card.stat}
+              </span>
+            </div>
+            <h3 className="text-lg font-semibold text-f1-text">{card.title}</h3>
+            <p className="mt-2 text-sm text-f1-muted">{card.insight}</p>
+            <div className="mt-4 inline-flex items-center text-sm font-medium text-f1-red">
+              Explore module
+              <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+            </div>
+          </NavLink>
+        ))}
+      </section>
+
+      <section className="f1-card p-6 text-center sm:p-8">
+        <h2 className="text-2xl font-semibold text-f1-text sm:text-3xl">Need context before diving into analytics?</h2>
+        <p className="mx-auto mt-3 max-w-2xl text-f1-muted">
+          New to the sport or onboarding non-F1 stakeholders? Start with the guide, then jump into live strategy and standings modules.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <NavLink to="/guide" className="f1-button">
+            <BookOpen className="h-4 w-4" />
+            Open F1 Guide
+          </NavLink>
+          <NavLink to="/profiles" className="f1-button-secondary">
+            <Users className="h-4 w-4" />
+            Compare Drivers and Teams
+          </NavLink>
+        </div>
+      </section>
+
+      <footer className="px-2 pt-2 text-center text-sm text-f1-muted">
+        Built as a portfolio-grade analytics product for high-end data product engineering and UI delivery.
+        <span className="ml-1 text-f1-text">F1IQ by Haris Ejaz.</span>
+      </footer>
+    </div>
+  );
 };
 
-export default Home; 
+export default Home;
