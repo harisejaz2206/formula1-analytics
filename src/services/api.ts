@@ -121,6 +121,11 @@ export const getCircuitInfo = async (circuitId: string) => {
   return data.CircuitTable?.Circuits[0] || null;
 };
 
+export const getCircuitHistory = async (circuitId: string, limit: number = 120) => {
+  const data = await fetchData(`/circuits/${circuitId}/results.json?limit=${limit}`);
+  return data.RaceTable?.Races || [];
+};
+
 export const getSeasonResults = async (season: string = "current") => {
   const data = await fetchData(`/${season}/results.json?limit=1000`);
   console.log("API Response:", data);

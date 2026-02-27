@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { getRaceResults, getLapTimes, getSeasons, getRounds, getPitStops } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SeasonSelector from '../components/SeasonSelector';
@@ -9,7 +9,13 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer
 } from 'recharts';
-import { Trophy, Flag, Clock, MapPin, Timer } from 'lucide-react';
+import { Activity, AlertTriangle, Trophy, Flag, Clock, MapPin, Timer } from 'lucide-react';
+
+const isFinishedStatus = (status: string | undefined) => Boolean(status && (status === 'Finished' || status.startsWith('+')));
+
+const getDriverFullName = (result: any) => `${result.Driver.givenName} ${result.Driver.familyName}`;
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 const RaceTracker: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -269,6 +275,124 @@ const RaceTracker: React.FC = () => {
     }));
   };
 
+  const liveRaceIntelligence = useMemo(() => {
+    if (!raceData?.Results?.length) {
+      return null;
+    }
+
+    const results = raceData.Results;
+    const winner = results[0];
+    const retirements = results.filter((result: any) => !isFinishedStatus(result.status));
+    const numericChanges = positionChanges.filter((change: any) => typeof change.positionChange === 'number');
+    const biggestGainer =
+      numericChanges.length > 0
+        ? [...numericChanges].sort((a: any, b: any) => b.positionChange - a.positionChange)[0]
+        : null;
+    const biggestLoser =
+      numericChanges.length > 0
+        ? [...numericChanges].sort((a: any, b: any) => a.positionChange - b.positionChange)[0]
+        : null;
+    const fastestPitStop =
+      pitStops.length > 0
+        ? pitStops.reduce((fastest: any, current: any) => (current.duration < fastest.duration ? current : fastest), pitStops[0])
+        : null;
+    const averagePitLap =
+      pitStops.length > 0 ? Math.round(pitStops.reduce((sum: number, stop: any) => sum + stop.lap, 0) / pitStops.length) : null;
+    const volatilityScore = clamp(
+      Math.round(
+        numericChanges.reduce((total: number, change: any) => total + Math.abs(change.positionChange), 0) * 4 +
+          retirements.length * 17 +
+          pitStops.length * 1.4,
+      ),
+      18,
+      95,
+    );
+
+    const lapSpreadAverage =
+      lapTimes.length > 0
+        ? lapTimes.reduce((sum: number, lap: any) => {
+            const values = Object.entries(lap)
+              .filter(([key, value]) => key !== 'lap' && typeof value === 'number')
+              .map(([, value]) => Number(value));
+            if (values.length < 2) {
+              return sum;
+            }
+            return sum + (Math.max(...values) - Math.min(...values));
+          }, 0) / lapTimes.length
+        : 0;
+
+    const confidence = clamp(
+      58 +
+        (lapTimes.length > 0 ? 16 : 0) +
+        (pitStops.length > 0 ? 15 : 0) +
+        (numericChanges.length > 0 ? 8 : 0) +
+        (results.some((result: any) => Boolean(result.FastestLap)) ? 4 : 0),
+      52,
+      97,
+    );
+
+    const volatilityBand = volatilityScore >= 70 ? 'High' : volatilityScore >= 42 ? 'Moderate' : 'Low';
+    const paceBand = lapSpreadAverage >= 1.25 ? 'High spread' : lapSpreadAverage >= 0.8 ? 'Balanced spread' : 'Tight spread';
+
+    return {
+      winnerName: getDriverFullName(winner),
+      winnerTeam: winner.Constructor.name,
+      winnerTime: winner.Time?.time || winner.status,
+      retirements,
+      biggestGainer,
+      biggestLoser,
+      fastestPitStop,
+      averagePitLap,
+      volatilityScore,
+      volatilityBand,
+      confidence,
+      totalPitStops: pitStops.length,
+      paceBand,
+      lapSpreadAverage,
+    };
+  }, [lapTimes, pitStops, positionChanges, raceData]);
+
+  const liveSignalFeed = useMemo(() => {
+    if (!liveRaceIntelligence) {
+      return [];
+    }
+
+    const feed = [
+      {
+        tag: 'Winner Lock',
+        message: `${liveRaceIntelligence.winnerName} (${liveRaceIntelligence.winnerTeam}) secured P1 in ${liveRaceIntelligence.winnerTime}.`,
+        tone: 'text-emerald-400',
+      },
+      liveRaceIntelligence.biggestGainer
+        ? {
+            tag: 'Position Surge',
+            message: `${liveRaceIntelligence.biggestGainer.driverName} gained +${liveRaceIntelligence.biggestGainer.positionChange} places from grid.`,
+            tone: 'text-cyan-400',
+          }
+        : null,
+      liveRaceIntelligence.fastestPitStop
+        ? {
+            tag: 'Pit Benchmark',
+            message: `${liveRaceIntelligence.fastestPitStop.driverName} posted fastest stop: ${liveRaceIntelligence.fastestPitStop.duration.toFixed(3)}s.`,
+            tone: 'text-f1-red',
+          }
+        : null,
+      liveRaceIntelligence.retirements.length > 0
+        ? {
+            tag: 'Reliability Alert',
+            message: `${liveRaceIntelligence.retirements.length} non-finishes flagged. Highest risk condition: ${liveRaceIntelligence.retirements[0].status}.`,
+            tone: 'text-amber-400',
+          }
+        : {
+            tag: 'Reliability',
+            message: 'No retirement events detected in this race result set.',
+            tone: 'text-emerald-400',
+          },
+    ].filter(Boolean) as Array<{ tag: string; message: string; tone: string }>;
+
+    return feed;
+  }, [liveRaceIntelligence]);
+
   const headerSection = (
     <PageHeader
       icon={Flag}
@@ -353,6 +477,111 @@ const RaceTracker: React.FC = () => {
     <div className="space-y-8">
       {headerSection}
       {selectorsSection}
+
+      {raceData && liveRaceIntelligence && (
+        <section className="f1-card relative overflow-hidden p-6">
+          <div className="absolute inset-0 bg-gradient-to-br from-f1-red/6 via-transparent to-transparent" />
+          <div className="relative z-10">
+            <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="f1-overline">LIVE RACE INTELLIGENCE</p>
+                <h2 className="text-2xl font-semibold text-f1-text">Race Signal Layer</h2>
+                <p className="mt-1 max-w-2xl text-sm text-f1-muted">
+                  Actionable race context generated from result status, lap pace spread, pit lane timing, and position dynamics.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-f1-gray/35 bg-f1-surface-soft px-3 py-1.5 text-sm">
+                <Activity className="h-4 w-4 text-f1-red" />
+                <span className="text-f1-muted">Model Confidence</span>
+                <span className="font-semibold text-f1-text">{Math.round(liveRaceIntelligence.confidence)}%</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/80 p-4">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-f1-muted">Volatility Index</p>
+                <p className="mt-2 text-2xl font-semibold text-f1-text">{liveRaceIntelligence.volatilityScore}</p>
+                <p className="text-sm text-f1-muted">{liveRaceIntelligence.volatilityBand} race movement</p>
+              </div>
+              <div className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/80 p-4">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-f1-muted">Undercut Window</p>
+                <p className="mt-2 text-2xl font-semibold text-f1-text">
+                  {liveRaceIntelligence.averagePitLap ? `Lap ${liveRaceIntelligence.averagePitLap}` : 'N/A'}
+                </p>
+                <p className="text-sm text-f1-muted">{liveRaceIntelligence.totalPitStops} total recorded pit events</p>
+              </div>
+              <div className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/80 p-4">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-f1-muted">Pace Distribution</p>
+                <p className="mt-2 text-2xl font-semibold text-f1-text">{liveRaceIntelligence.paceBand}</p>
+                <p className="text-sm text-f1-muted">{liveRaceIntelligence.lapSpreadAverage.toFixed(2)}s average top-5 spread</p>
+              </div>
+              <div className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/80 p-4">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-f1-muted">Reliability</p>
+                <p className="mt-2 text-2xl font-semibold text-f1-text">{liveRaceIntelligence.retirements.length}</p>
+                <p className="text-sm text-f1-muted">
+                  {liveRaceIntelligence.retirements.length > 0 ? 'Retirement events flagged' : 'No retirement events'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/70 p-4">
+                <h3 className="mb-3 text-lg font-semibold text-f1-text">Actionable Signals</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3 rounded-lg border border-f1-gray/20 bg-f1-surface/70 p-3">
+                    <Timer className="mt-0.5 h-4 w-4 shrink-0 text-f1-red" />
+                    <div>
+                      <p className="font-medium text-f1-text">Pit Strategy Pivot</p>
+                      <p className="text-f1-muted">
+                        {liveRaceIntelligence.averagePitLap
+                          ? `Primary pit activity clustered near lap ${liveRaceIntelligence.averagePitLap}.`
+                          : 'Insufficient pit stop events for a stable pit window model.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 rounded-lg border border-f1-gray/20 bg-f1-surface/70 p-3">
+                    <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-f1-red" />
+                    <div>
+                      <p className="font-medium text-f1-text">Position Momentum</p>
+                      <p className="text-f1-muted">
+                        {liveRaceIntelligence.biggestGainer
+                          ? `${liveRaceIntelligence.biggestGainer.driverName} delivered the strongest gain (+${liveRaceIntelligence.biggestGainer.positionChange}).`
+                          : 'No significant position gain signal available for this event.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 rounded-lg border border-f1-gray/20 bg-f1-surface/70 p-3">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                    <div>
+                      <p className="font-medium text-f1-text">Risk Watch</p>
+                      <p className="text-f1-muted">
+                        {liveRaceIntelligence.biggestLoser
+                          ? `${liveRaceIntelligence.biggestLoser.driverName} dropped ${Math.abs(liveRaceIntelligence.biggestLoser.positionChange)} places, indicating strategy or pace risk.`
+                          : 'No major negative position swing detected in this race output.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-f1-gray/30 bg-f1-surface-soft/70 p-4">
+                <h3 className="mb-3 text-lg font-semibold text-f1-text">Live Signal Feed</h3>
+                <div className="space-y-2">
+                  {liveSignalFeed.map((signal) => (
+                    <div key={signal.tag} className="rounded-lg border border-f1-gray/20 bg-f1-surface/70 p-3">
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="text-xs uppercase tracking-[0.12em] text-f1-muted">{signal.tag}</span>
+                        <span className={`text-xs font-medium ${signal.tone}`}>Active</span>
+                      </div>
+                      <p className="text-sm text-f1-text">{signal.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {raceData && (
         <section className="f1-card p-6 relative overflow-hidden group">
